@@ -1,5 +1,4 @@
 // @flow
-import Uint from './Uint';
 import Uint8 from './Uint8';
 import Uint16 from './Uint16';
 import ConditionCodes from './ConditionCodes';
@@ -34,7 +33,7 @@ export default class CpuState {
   intEnable: Uint8 = new Uint8();
 
   get bc(): Uint16 {
-    return utils.concat(this.b, this.c);
+    return utils.concatUint(this.b, this.c);
   }
 
   set bc(bytes: Uint16) {
@@ -44,7 +43,7 @@ export default class CpuState {
   }
 
   get de(): Uint16 {
-    return utils.concat(this.d, this.e);
+    return utils.concatUint(this.d, this.e);
   }
 
   set de(bytes: Uint16) {
@@ -54,7 +53,7 @@ export default class CpuState {
   }
 
   get hl(): Uint16 {
-    return utils.concat(this.h, this.l);
+    return utils.concatUint(this.h, this.l);
   }
 
   set hl(bytes: Uint16) {

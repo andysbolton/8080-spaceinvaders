@@ -27,11 +27,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Uint8_1 = __importDefault(require("./models/Uint8"));
 var CpuState_1 = __importDefault(require("./models/CpuState"));
 var utils_1 = __importDefault(require("./utils/utils"));
+var Bit_1 = require("./models/Bit");
 var fs = require('fs');
-var bit = function (arg) {
-    var val = typeof arg === 'number' ? !!arg : arg;
-    return val ? new Uint8_1.default(1) : new Uint8_1.default(0);
-};
 var Emulator = /** @class */ (function () {
     function Emulator(_a) {
         var debug = _a.debug;
@@ -56,10 +53,12 @@ var Emulator = /** @class */ (function () {
         this.readNext = function () {
             var state = _this.state;
             var opcode = state.memory[state.pc.val()].val();
-            // if (this.debug && this.instructionNumber >= 1545) {
+            // if (this.debug && this.instructionNumber >= 42432 - 10) {
             //   this.log(state.pc.val(), opcode);
             // }
-            _this.instructionNumber++;
+            // if (this.instructionNumber === 42432) {
+            //   debugger;
+            // }
             switch (opcode) {
                 case 0x00: {
                     // NOP
@@ -108,9 +107,9 @@ var Emulator = /** @class */ (function () {
                 case 0x09: {
                     // DAD B
                     // const res = this.concat(this.state.b, this.state.c);
-                    var _a = state.hl.add(state.bc), val = _a.val, carry = _a.carry;
+                    var val = state.hl.add(state.bc);
                     state.hl = val;
-                    _this.setCarryBit(carry);
+                    _this.setCarryBit(val.carry);
                     state.pc.incr(1);
                     break;
                 }
@@ -140,7 +139,9 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0x0f: {
-                    _this.unimplementedInstruction(opcode);
+                    // RRC
+                    _this.rotate(state.a);
+                    state.pc.incr(1);
                     break;
                 }
                 case 0x10: {
@@ -160,7 +161,7 @@ var Emulator = /** @class */ (function () {
                 case 0x13: {
                     // INX D
                     // const bytes = this.concat(state.d, state.e);
-                    var val = state.de.add(1).val;
+                    var val = state.de.add(1);
                     state.de = val;
                     // const { high, low } = this.split(bytes.val());
                     // state.d = high;
@@ -194,9 +195,9 @@ var Emulator = /** @class */ (function () {
                 case 0x19: {
                     // DAD D
                     // const res = this.concat(this.state.d, this.state.e);
-                    var _b = state.hl.add(state.de), val = _b.val, carry = _b.carry;
+                    var val = state.hl.add(state.de);
                     state.hl = val;
-                    _this.setCarryBit(carry);
+                    _this.setCarryBit(val.carry);
                     state.pc.incr(1);
                     break;
                 }
@@ -242,7 +243,7 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0x23: {
                     // INX H
-                    var val = state.hl.add(1).val;
+                    var val = state.hl.add(1);
                     state.hl = val;
                     // const { high, low } = this.split(bytes.val());
                     // state.h = high;
@@ -277,9 +278,9 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0x29: {
                     // DAD H
-                    var _c = state.hl.add(state.hl), val = _c.val, carry = _c.carry;
+                    var val = state.hl.add(state.hl);
                     state.hl = val;
-                    _this.setCarryBit(carry);
+                    _this.setCarryBit(val.carry);
                     state.pc.incr(1);
                     break;
                 }
@@ -320,7 +321,10 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0x32: {
-                    _this.unimplementedInstruction(opcode);
+                    // STA adr
+                    var address = utils_1.default.concat(_this.byteAt(2), _this.byteAt(1));
+                    state.memory[address.val()] = state.a;
+                    state.pc.incr(3);
                     break;
                 }
                 case 0x33: {
@@ -355,7 +359,10 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0x3a: {
-                    _this.unimplementedInstruction(opcode);
+                    // LDA adr
+                    var adr = utils_1.default.concat(_this.byteAt(2), _this.byteAt(1));
+                    state.a = state.memory[adr.val()];
+                    state.pc.incr(3);
                     break;
                 }
                 case 0x3b: {
@@ -371,7 +378,9 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0x3e: {
-                    _this.unimplementedInstruction(opcode);
+                    // MVI A, D8
+                    state.a = _this.byteAt(1);
+                    state.pc.incr(2);
                     break;
                 }
                 case 0x3f: {
@@ -618,7 +627,8 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0x7b: {
-                    _this.unimplementedInstruction(opcode);
+                    // 	MOV A, E
+                    _this.mov('a', 'e');
                     break;
                 }
                 case 0x7c: {
@@ -641,15 +651,15 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0x80: {
                     // ADD B
-                    var _d = state.a.add(state.b), val = _d.val, carry = _d.carry;
-                    _this.setFlags(val, carry);
+                    var val = state.a.add(state.b);
+                    _this.setFlags(val, true);
                     state.a = val;
                     break;
                 }
                 case 0x81: {
                     // ADD C
-                    var _e = state.a.add(state.c), val = _e.val, carry = _e.carry;
-                    _this.setFlags(val, carry);
+                    var val = state.a.add(state.c);
+                    _this.setFlags(val, true);
                     state.a = val;
                     break;
                 }
@@ -672,8 +682,8 @@ var Emulator = /** @class */ (function () {
                 case 0x86: {
                     // ADD M
                     // const offset = (state.h.val() << 8) | state.l.val();
-                    var _f = state.a.add(state.memory[state.hl.val()]), val = _f.val, carry = _f.carry;
-                    _this.setFlags(val, carry);
+                    var val = state.a.add(state.memory[state.hl.val()]);
+                    _this.setFlags(val, true);
                     state.a = val;
                     break;
                 }
@@ -806,7 +816,11 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0xa7: {
-                    _this.unimplementedInstruction(opcode);
+                    // ANA A
+                    var and = state.a.val() & state.a.val();
+                    state.a = new Uint8_1.default(and);
+                    _this.setFlags(state.a, true);
+                    state.pc.incr(1);
                     break;
                 }
                 case 0xa8: {
@@ -838,7 +852,11 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0xaf: {
-                    _this.unimplementedInstruction(opcode);
+                    // XRA A
+                    var xor = Bit_1.toBit(!!state.a.val() != !!state.a.val());
+                    state.a = new Uint8_1.default(xor);
+                    _this.setFlags(state.a, true);
+                    state.pc.incr(1);
                     break;
                 }
                 case 0xb0: {
@@ -920,7 +938,7 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0xc2: {
                     // JNZ address
-                    if (state.cc.z.isZero) {
+                    if (state.cc.z === 0) {
                         state.pc = utils_1.default.concat(_this.byteAt(2), _this.byteAt(1));
                     }
                     else {
@@ -946,10 +964,11 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0xc6: {
                     // ADI byte
-                    var _g = state.a.add(_this.byteAt(1)), val = _g.val, carry = _g.carry;
-                    _this.setFlags(val, carry);
+                    // TODO: BUG HERE (?) try to pick up here
+                    var val = state.a.add(_this.byteAt(1));
+                    _this.setFlags(val, true);
                     state.a = val;
-                    state.pc.incr(1);
+                    state.pc.incr(2);
                     break;
                 }
                 case 0xc7: {
@@ -983,8 +1002,8 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0xcd: {
                     // CALL address
-                    var val = state.pc.add(new Uint8_1.default(3)).val;
-                    var _h = utils_1.default.split(val), high = _h.high, low = _h.low;
+                    var val = state.pc.add(new Uint8_1.default(3));
+                    var _a = utils_1.default.split(val), high = _a.high, low = _a.low;
                     state.memory[state.sp.decr(1)] = high;
                     state.memory[state.sp.decr(1)] = low;
                     state.pc = utils_1.default.concat(_this.byteAt(2), _this.byteAt(1));
@@ -1017,6 +1036,7 @@ var Emulator = /** @class */ (function () {
                 }
                 case 0xd3: {
                     // OUT D8
+                    console.log(_this.byteAt(1).val());
                     _this.out[_this.byteAt(1).val()] = state.a.val();
                     state.pc.incr(2);
                     break;
@@ -1097,7 +1117,7 @@ var Emulator = /** @class */ (function () {
                     // CPO
                     // TODO: need else?
                     _this.unimplementedInstruction(opcode);
-                    if (state.cc.p.isZero) {
+                    if (state.cc.p === 0) {
                         state.pc = utils_1.default.concat(_this.byteAt(2), _this.byteAt(1));
                     }
                     break;
@@ -1110,7 +1130,11 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0xe6: {
-                    _this.unimplementedInstruction(opcode);
+                    // ANI D8
+                    var and = state.a.val() & _this.byteAt(1).val();
+                    state.a = new Uint8_1.default(and);
+                    _this.setFlags(state.a, true);
+                    state.pc.incr(2);
                     break;
                 }
                 case 0xe7: {
@@ -1161,7 +1185,11 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0xf1: {
-                    _this.unimplementedInstruction(opcode);
+                    // POP PSW
+                    var psw = state.memory[state.sp.val() + 1];
+                    state.cc.setPsw(psw);
+                    state.sp.incr(2);
+                    state.pc.incr(1);
                     break;
                 }
                 case 0xf2: {
@@ -1179,7 +1207,7 @@ var Emulator = /** @class */ (function () {
                 case 0xf5: {
                     // PUSH PSW
                     state.memory[state.sp.decr(1)] = state.a;
-                    state.memory[state.sp.decr(1)] = state.e;
+                    state.memory[state.sp.decr(1)] = state.cc.getPsw();
                     state.pc.incr(1);
                     break;
                 }
@@ -1204,7 +1232,9 @@ var Emulator = /** @class */ (function () {
                     break;
                 }
                 case 0xfb: {
-                    _this.unimplementedInstruction(opcode);
+                    // EI
+                    state.intEnable = new Uint8_1.default(1);
+                    state.pc.incr(1);
                     break;
                 }
                 case 0xfc: {
@@ -1219,8 +1249,8 @@ var Emulator = /** @class */ (function () {
                     // CPI D8
                     // TODO: still need this?
                     // const val = utils.subUnsigned(state.a, this.byteAt(1));
-                    var _j = state.a.sub(_this.byteAt(1)), val = _j.val, carry = _j.carry;
-                    _this.setFlags(val, carry);
+                    var val = state.a.sub(_this.byteAt(1));
+                    _this.setFlags(val, true);
                     state.pc.incr(2);
                     break;
                 }
@@ -1231,19 +1261,21 @@ var Emulator = /** @class */ (function () {
                 default:
                     _this.unimplementedInstruction(-1);
             }
+            _this.instructionNumber++;
         };
         this.setFlags = function (n, carry) {
             var state = _this.state;
-            state.cc.z = bit((n.val() & 0xff) === 0);
-            state.cc.s = bit((n.val() & 0x80) !== 0);
+            state.cc.z = Bit_1.toBit((n.val() & 0xff) === 0);
+            state.cc.s = Bit_1.toBit((n.val() & 0x80) !== 0);
+            state.cc.ac = n.auxCarry;
             state.cc.p = _this.parity(n.val());
             if (carry) {
-                _this.setCarryBit(carry);
+                _this.setCarryBit(n.carry);
             }
         };
-        this.setCarryBit = function (n) { return (_this.state.cc.cy = bit(n)); };
+        this.setCarryBit = function (n) { return (_this.state.cc.cy = n); };
         this.parity = function (n) {
-            return bit(n % 2 === 1 ? 0 : 1);
+            return Bit_1.toBit(n % 2 === 1 ? 0 : 1);
             // let calc = n & 0xff;
             // let parity = 0;
             // while (calc) {
@@ -1273,6 +1305,12 @@ var Emulator = /** @class */ (function () {
             }
             state.pc.incr(1);
         };
+        this.rotate = function (accum) {
+            var binary = accum.val().toString(2);
+            _this.setCarryBit(Bit_1.toBit(Number(binary[0])));
+            var transform = binary.slice(2) + binary.slice(0, 1);
+            accum = new Uint8_1.default(parseInt(transform, 2));
+        };
         this.unimplementedInstruction = function (opcode) {
             var state = _this.state;
             throw new Error("Unimplemented code at instruction " + _this.instructionNumber + " at for opcode " + opcode.toString(16) + " at offset " + state.pc.val());
@@ -1286,33 +1324,18 @@ var Emulator = /** @class */ (function () {
     }
     Emulator.prototype.logState = function (state) {
         var cc = state.cc;
-        console.log('{');
-        console.log('  a: ' + state.a.hex);
-        console.log('  bc: ' + state.bc.hex);
-        console.log('  de: ' + state.de.hex);
-        console.log('  hl: ' + state.hl.hex);
-        console.log('  pc: ' + state.pc.hex);
-        console.log('  sp: ' + state.sp.hex);
-        console.log('  cc: {');
-        console.log('    z: ' + cc.z.hex);
-        console.log('    s: ' + cc.s.hex);
-        console.log('    p: ' + cc.p.hex);
-        console.log('    cy: ' + cc.cy.hex);
-        console.log('    ac: ' + cc.ac.hex);
-        console.log('  }');
-        console.log('}');
+        console.log("\n    {\n      a: " + state.a.hex + "\n      bc: " + state.bc.hex + "\n      de: " + state.de.hex + "\n      hl: " + state.hl.hex + "\n      pc: " + state.pc.hex + "\n      sp: " + state.sp.hex + "\n      cc: {\n        z: " + cc.z + "\n        s: " + cc.s + "\n        p: " + cc.p + "\n        cy: " + cc.cy + "\n        ac: " + cc.ac + "\n      }\n    }");
     };
     return Emulator;
 }());
-var app = new Emulator({
-    debug: true,
-});
-try {
-    app.run();
-}
-catch (error) {
-    console.log(app.instructionNumber);
-    console.log(error);
-}
+// const app = new Emulator({
+//   debug: true,
+// });
+// try {
+//   app.run();
+// } catch (error) {
+//   console.log(app.instructionNumber);
+//   console.log(error);
+// }
 module.exports = Emulator;
 //# sourceMappingURL=emulator.js.map

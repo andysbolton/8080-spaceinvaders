@@ -31,10 +31,11 @@ var Uint16 = /** @class */ (function (_super) {
         else {
             val = this.num + n.val();
         }
-        return {
-            val: new Uint16(val & this.max),
-            carry: this.checkCarry(val),
-        };
+        var ret = new Uint16(val & this.max);
+        var _a = this.checkCarry(val), carry = _a.carry, auxCarry = _a.auxCarry;
+        ret.carry = carry;
+        ret.auxCarry = auxCarry;
+        return ret;
     };
     Uint16.prototype.sub = function (n) {
         var val;
@@ -44,10 +45,11 @@ var Uint16 = /** @class */ (function (_super) {
         else {
             val = this.num - n.val();
         }
-        return {
-            val: new Uint16(val & this.max),
-            carry: this.checkCarry(val),
-        };
+        var ret = new Uint16(val & this.max);
+        var _a = this.checkCarry(val), carry = _a.carry, auxCarry = _a.auxCarry;
+        ret.carry = carry;
+        ret.auxCarry = auxCarry;
+        return ret;
     };
     return Uint16;
 }(Uint_1.default));

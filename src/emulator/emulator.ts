@@ -1,46 +1,119 @@
 // @flow
+import { IMediator } from './../common/interfaces/IMediator';
+import { IColleague } from './../common/interfaces/IColleague';
 import Uint8 from './models/Uint8';
-import Uint16 from './models/Uint16';
 import Uint from './models/Uint';
 import CpuState from './models/CpuState';
 import utils from './utils/utils';
+import Bit, { toBit } from './models/Bit';
+import { bit } from './utils/bit';
+import Uint16 from './models/Uint16';
 
-const fs = require('fs');
+// const fs = require('fs');
 
-const bit = (arg: boolean | number): Uint8 => {
-  const val = typeof arg === 'number' ? !!arg : arg;
-  return val ? new Uint8(1) : new Uint8(0);
-};
+// prettier-ignore
+const cycles8080 = [
+	4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x00..0x0f
+	4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x10..0x1f
+	4, 10, 16, 5, 5, 5, 7, 4, 4, 10, 16, 5, 5, 5, 7, 4, //etc
+	4, 10, 13, 5, 10, 10, 10, 4, 4, 10, 13, 5, 5, 5, 7, 4,
 
-class Emulator {
+	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, //0x40..0x4f
+	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5,
+	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5,
+	7, 7, 7, 7, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5, 7, 5,
+
+	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4, //0x80..8x4f
+	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
+	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
+	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
+
+	11, 10, 10, 10, 17, 11, 7, 11, 11, 10, 10, 10, 10, 17, 7, 11, //0xc0..0xcf
+	11, 10, 10, 10, 17, 11, 7, 11, 11, 10, 10, 10, 10, 17, 7, 11,
+	11, 10, 10, 18, 17, 11, 7, 11, 11, 5, 10, 5, 17, 17, 7, 11,
+	11, 10, 10, 4, 17, 11, 7, 11, 11, 5, 10, 4, 17, 17, 7, 11,
+];
+
+export class Emulator implements IColleague {
   debug: boolean;
   state: CpuState;
   out: Buffer;
-  logStack: Array<string> = [];
+  mediator: IMediator;
   instructionNumber: number = 0;
-  subprocess: any;
+  lastInterrupt: number = 0;
 
-  constructor({ debug }: { debug: boolean }) {
+  constructor({
+    mediator,
+    debug,
+    web,
+  }: {
+    mediator: IMediator;
+    web: boolean;
+    debug?: boolean;
+  }) {
     this.state = new CpuState();
 
-    const rom = fs.readFileSync('invaders');
-    const ram = Buffer.alloc(0x2000);
-    this.state.memory.set([...rom, ...ram]);
+    const useWeb = !!web;
+    const useDebug = !!debug;
+
+    if (!useWeb) {
+      // const rom = fs.readFileSync('invaders');
+      // const ram = Buffer.alloc(0x2000);
+      // this.state.memory.set([...rom, ...ram]);
+    } else {
+    }
 
     this.out = Buffer.alloc(0x0100);
-
-    this.debug = !!debug;
+    this.mediator = mediator;
+    this.debug = useDebug;
   }
 
-  byteAt = (index: number): Uint8 => {
+  send(port: number, val: number, isRam: boolean = false) {
+    this.mediator.sendOut(port, val, isRam);
+  }
+
+  receive(port: number, val: number, isRam: boolean = false) {}
+
+  private byteAt = (index: number): Uint8 => {
     const { state } = this;
     return state.memory[state.pc.val() + index];
   };
 
-  run = (): void => {
+  init() {
+    const ram = new Uint8Array(0x2000);
+
+    fetch('invaders').then(res => {
+      res.arrayBuffer().then(buf => {
+        const view = new Uint8Array(buf);
+        const romBytes = [...view].map(Number);
+        const ramBytes = [...ram].map(Number);
+        this.state.memory.set([...romBytes, ...ramBytes]);
+
+        this.run();
+      });
+    });
+  }
+
+  private run = async () => {
     const { state } = this;
     while (state.pc.val() > -1) {
-      this.readNext();
+      // alert(this.instructionNumber);
+      if (this.instructionNumber % 1000 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1));
+      }
+      // if (new Date().getTime() - this.lastInterrupt > 1.0 / 60.0) {
+      //   //1/60 second has elapsed
+      //   //only do an interrupt if they are enabled
+      //   if (this.state.intEnable) {
+      //     this.generateInterrupt(2); //interrupt 2
+
+      //     //Save the time we did this
+      //     this.lastInterrupt = new Date().getTime();
+      //   }
+      // }
+
+      const cycles = this.readNext();
+      // setTimeout(this.readNext, 1000);
     }
   };
 
@@ -57,32 +130,51 @@ class Emulator {
   private logState(state: CpuState) {
     const { cc } = state;
 
-    console.log('{');
-    console.log('  a: ' + state.a.hex);
-    console.log('  bc: ' + state.bc.hex);
-    console.log('  de: ' + state.de.hex);
-    console.log('  hl: ' + state.hl.hex);
-    console.log('  pc: ' + state.pc.hex);
-    console.log('  sp: ' + state.sp.hex);
-    console.log('  cc: {');
-    console.log('    z: ' + cc.z.hex);
-    console.log('    s: ' + cc.s.hex);
-    console.log('    p: ' + cc.p.hex);
-    console.log('    cy: ' + cc.cy.hex);
-    console.log('    ac: ' + cc.ac.hex);
-    console.log('  }');
-    console.log('}');
+    console.log(`
+    {
+      a: ${state.a.hex}
+      bc: ${state.bc.hex}
+      de: ${state.de.hex}
+      hl: ${state.hl.hex}
+      pc: ${state.pc.hex}
+      sp: ${state.sp.hex}
+      cc: {
+        z: ${cc.z}
+        s: ${cc.s}
+        p: ${cc.p}
+        cy: ${cc.cy}
+        ac: ${cc.ac}
+      }
+    }`);
   }
 
-  readNext = (): void => {
+  private push(high: number, low: number) {
+    const { state } = this;
+    state[state.sp.sub(1).val()] = high;
+    state[state.sp.sub(2).val()] = low;
+    state.sp.incr(2);
+  }
+
+  private generateInterrupt(interruptNum: number) {
+    const { state } = this;
+    //perform "PUSH PC"
+    this.push((state.pc.val() & 0xff00) >> 8, state.pc.val() & 0xff);
+
+    //Set the PC to the low memory vector.
+    //This is identical to an "RST interrupt_num" instruction.
+  }
+
+  private readNext = (): number => {
     const { state } = this;
     const opcode = state.memory[state.pc.val()].val();
 
-    // if (this.debug && this.instructionNumber >= 1545) {
+    // if (this.debug && this.instructionNumber >= 37350 - 2) {
     //   this.log(state.pc.val(), opcode);
     // }
 
-    this.instructionNumber++;
+    if (this.instructionNumber === 37350) {
+      debugger;
+    }
 
     switch (opcode) {
       case 0x00: {
@@ -131,10 +223,10 @@ class Emulator {
       }
       case 0x09: {
         // DAD B
-        // const res = this.concat(this.state.b, this.state.c);
-        const { val, carry } = state.hl.add(state.bc);
+        // const res = this.concatUint(this.state.b, this.state.c);
+        const val = state.hl.add(state.bc);
         state.hl = val;
-        this.setCarryBit(carry);
+        this.setCarryBit(val.carry);
         state.pc.incr(1);
         break;
       }
@@ -164,7 +256,9 @@ class Emulator {
         break;
       }
       case 0x0f: {
-        this.unimplementedInstruction(opcode);
+        // RRC
+        this.rotate(state.a);
+        state.pc.incr(1);
         break;
       }
       case 0x10: {
@@ -173,7 +267,7 @@ class Emulator {
       }
       case 0x11: {
         // LXI D, D16
-        state.de = utils.concat(this.byteAt(2), this.byteAt(1));
+        state.de = utils.concatUint(this.byteAt(2), this.byteAt(1));
         state.pc.incr(3);
         break;
       }
@@ -183,8 +277,8 @@ class Emulator {
       }
       case 0x13: {
         // INX D
-        // const bytes = this.concat(state.d, state.e);
-        const { val } = state.de.add(1);
+        // const bytes = this.concatUint(state.d, state.e);
+        const val = state.de.add(1);
         state.de = val;
         // const { high, low } = this.split(bytes.val());
         // state.d = high;
@@ -217,10 +311,10 @@ class Emulator {
       }
       case 0x19: {
         // DAD D
-        // const res = this.concat(this.state.d, this.state.e);
-        const { val, carry } = state.hl.add(state.de);
+        // const res = this.concatUint(this.state.d, this.state.e);
+        const val = state.hl.add(state.de);
         state.hl = val;
-        this.setCarryBit(carry);
+        this.setCarryBit(val.carry);
         state.pc.incr(1);
         break;
       }
@@ -256,7 +350,7 @@ class Emulator {
       }
       case 0x21: {
         // LXI H, D16
-        state.hl = utils.concat(this.byteAt(2), this.byteAt(1));
+        state.hl = utils.concatUint(this.byteAt(2), this.byteAt(1));
         state.pc.incr(3);
         break;
       }
@@ -266,7 +360,7 @@ class Emulator {
       }
       case 0x23: {
         // INX H
-        const { val } = state.hl.add(1);
+        const val = state.hl.add(1);
         state.hl = val;
         // const { high, low } = this.split(bytes.val());
         // state.h = high;
@@ -301,9 +395,9 @@ class Emulator {
       }
       case 0x29: {
         // DAD H
-        const { val, carry } = state.hl.add(state.hl);
+        const val = state.hl.add(state.hl);
         state.hl = val;
-        this.setCarryBit(carry);
+        this.setCarryBit(val.carry);
         state.pc.incr(1);
         break;
       }
@@ -339,12 +433,15 @@ class Emulator {
       }
       case 0x31: {
         // LXI SP, D16
-        state.sp = utils.concat(this.byteAt(2), this.byteAt(1));
+        state.sp = utils.concatUint(this.byteAt(2), this.byteAt(1));
         state.pc.incr(3);
         break;
       }
       case 0x32: {
-        this.unimplementedInstruction(opcode);
+        // STA adr
+        const address = utils.concatUint(this.byteAt(2), this.byteAt(1));
+        state.memory[address.val()] = state.a;
+        state.pc.incr(3);
         break;
       }
       case 0x33: {
@@ -361,8 +458,11 @@ class Emulator {
       }
       case 0x36: {
         // MVI M, D8
-        // const addr = this.concat(this.state.h, this.state.l);
-        state.memory[state.hl.val()] = this.byteAt(1);
+        // const addr = this.concatUint(this.state.h, this.state.l);
+        // state.memory[state.hl.val()] = this.byteAt(1);
+        // this.send(state.hl.val(), this.byteAt(1).val(), true);
+        this.updateRam(state.hl.val(), this.byteAt(1));
+        // this.send(state.hl.val(), this.byteAt(1).val());
         state.pc.incr(2);
         break;
       }
@@ -379,7 +479,10 @@ class Emulator {
         break;
       }
       case 0x3a: {
-        this.unimplementedInstruction(opcode);
+        // LDA adr
+        const adr = utils.concatUint(this.byteAt(2), this.byteAt(1));
+        state.a = state.memory[adr.val()];
+        state.pc.incr(3);
         break;
       }
       case 0x3b: {
@@ -395,7 +498,9 @@ class Emulator {
         break;
       }
       case 0x3e: {
-        this.unimplementedInstruction(opcode);
+        // MVI A, D8
+        state.a = this.byteAt(1);
+        state.pc.incr(2);
         break;
       }
       case 0x3f: {
@@ -642,7 +747,8 @@ class Emulator {
         break;
       }
       case 0x7b: {
-        this.unimplementedInstruction(opcode);
+        // 	MOV A, E
+        this.mov('a', 'e');
         break;
       }
       case 0x7c: {
@@ -665,15 +771,15 @@ class Emulator {
       }
       case 0x80: {
         // ADD B
-        const { val, carry } = state.a.add(state.b);
-        this.setFlags(val, carry);
+        const val = state.a.add(state.b);
+        this.setFlags(val, true);
         state.a = val;
         break;
       }
       case 0x81: {
         // ADD C
-        const { val, carry } = state.a.add(state.c);
-        this.setFlags(val, carry);
+        const val = state.a.add(state.c);
+        this.setFlags(val, true);
         state.a = val;
         break;
       }
@@ -696,8 +802,8 @@ class Emulator {
       case 0x86: {
         // ADD M
         // const offset = (state.h.val() << 8) | state.l.val();
-        const { val, carry } = state.a.add(state.memory[state.hl.val()]);
-        this.setFlags(val, carry);
+        const val = state.a.add(state.memory[state.hl.val()]);
+        this.setFlags(val, true);
         state.a = val;
         break;
       }
@@ -830,7 +936,11 @@ class Emulator {
         break;
       }
       case 0xa7: {
-        this.unimplementedInstruction(opcode);
+        // ANA A
+        const and = state.a.val() & state.a.val();
+        state.a = new Uint8(and);
+        this.setFlags(state.a, true);
+        state.pc.incr(1);
         break;
       }
       case 0xa8: {
@@ -862,7 +972,11 @@ class Emulator {
         break;
       }
       case 0xaf: {
-        this.unimplementedInstruction(opcode);
+        // XRA A
+        const xor = toBit(!!state.a.val() != !!state.a.val());
+        state.a = new Uint8(xor);
+        this.setFlags(state.a, true);
+        state.pc.incr(1);
         break;
       }
       case 0xb0: {
@@ -937,15 +1051,15 @@ class Emulator {
         // POP B
         const low = state.memory[state.sp.val()];
         const high = state.memory[state.sp.incr(1)];
-        state.bc = utils.concat(high, low);
+        state.bc = utils.concatUint(high, low);
         state.sp.incr(1);
         state.pc.incr(1);
         break;
       }
       case 0xc2: {
         // JNZ address
-        if (state.cc.z.isZero) {
-          state.pc = utils.concat(this.byteAt(2), this.byteAt(1));
+        if (state.cc.z === 0) {
+          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
         } else {
           state.pc.incr(3);
         }
@@ -953,7 +1067,7 @@ class Emulator {
       }
       case 0xc3: {
         // JMP address
-        state.pc = utils.concat(this.byteAt(2), this.byteAt(1));
+        state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
         break;
       }
       case 0xc4: {
@@ -969,14 +1083,17 @@ class Emulator {
       }
       case 0xc6: {
         // ADI byte
-        const { val, carry } = state.a.add(this.byteAt(1));
-        this.setFlags(val, carry);
+        // TODO: BUG HERE (?) try to pick up here
+        const val = state.a.add(this.byteAt(1));
+        this.setFlags(val, true);
         state.a = val;
-        state.pc.incr(1);
+        state.pc.incr(2);
         break;
       }
       case 0xc7: {
-        this.unimplementedInstruction(opcode);
+        // RST
+        state.pc = new Uint16(0);
+        state.pc.incr(1);
         break;
       }
       case 0xc8: {
@@ -989,7 +1106,7 @@ class Emulator {
         const low = state.memory[state.sp.val()];
         const high = state.memory[state.sp.incr(1)];
 
-        state.pc = utils.concat(high, low);
+        state.pc = utils.concatUint(high, low);
         state.sp.incr(1);
         break;
       }
@@ -1007,12 +1124,12 @@ class Emulator {
       }
       case 0xcd: {
         // CALL address
-        const { val } = state.pc.add(new Uint8(3));
+        const val = state.pc.add(new Uint8(3));
         const { high, low } = utils.split(val);
 
         state.memory[state.sp.decr(1)] = high;
         state.memory[state.sp.decr(1)] = low;
-        state.pc = utils.concat(this.byteAt(2), this.byteAt(1));
+        state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
         break;
       }
       case 0xce: {
@@ -1031,7 +1148,7 @@ class Emulator {
         // POP D
         const low = state.memory[state.sp.val()];
         const high = state.memory[state.sp.incr(1)];
-        state.de = utils.concat(high, low);
+        state.de = utils.concatUint(high, low);
         state.sp.incr(1);
         state.pc.incr(1);
         break;
@@ -1042,7 +1159,15 @@ class Emulator {
       }
       case 0xd3: {
         // OUT D8
-        this.out[this.byteAt(1).val()] = state.a.val();
+        // this.out[this.byteAt(1).val()] = state.a.val();
+        console.log(
+          this.instructionNumber +
+            ' ' +
+            this.byteAt(1).val() +
+            ' ' +
+            state.a.val()
+        );
+        this.send(this.byteAt(1).val(), state.a.val());
         state.pc.incr(2);
         break;
       }
@@ -1105,7 +1230,7 @@ class Emulator {
         // POP H
         const low = state.memory[state.sp.val()];
         const high = state.memory[state.sp.incr(1)];
-        state.hl = utils.concat(high, low);
+        state.hl = utils.concatUint(high, low);
         state.sp.incr(1);
         state.pc.incr(1);
         break;
@@ -1122,8 +1247,8 @@ class Emulator {
         // CPO
         // TODO: need else?
         this.unimplementedInstruction(opcode);
-        if (state.cc.p.isZero) {
-          state.pc = utils.concat(this.byteAt(2), this.byteAt(1));
+        if (state.cc.p === 0) {
+          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
         }
         break;
       }
@@ -1135,7 +1260,11 @@ class Emulator {
         break;
       }
       case 0xe6: {
-        this.unimplementedInstruction(opcode);
+        // ANI D8
+        const and = state.a.val() & this.byteAt(1).val();
+        state.a = new Uint8(and);
+        this.setFlags(state.a, true);
+        state.pc.incr(2);
         break;
       }
       case 0xe7: {
@@ -1186,7 +1315,13 @@ class Emulator {
         break;
       }
       case 0xf1: {
-        this.unimplementedInstruction(opcode);
+        // POP PSW
+        const psw = state.memory[state.sp.val() + 1];
+
+        state.cc.setPsw(psw);
+
+        state.sp.incr(2);
+        state.pc.incr(1);
         break;
       }
       case 0xf2: {
@@ -1204,7 +1339,7 @@ class Emulator {
       case 0xf5: {
         // PUSH PSW
         state.memory[state.sp.decr(1)] = state.a;
-        state.memory[state.sp.decr(1)] = state.e;
+        state.memory[state.sp.decr(1)] = state.cc.getPsw();
         state.pc.incr(1);
         break;
       }
@@ -1229,7 +1364,9 @@ class Emulator {
         break;
       }
       case 0xfb: {
-        this.unimplementedInstruction(opcode);
+        // EI
+        state.intEnable = new Uint8(1);
+        state.pc.incr(1);
         break;
       }
       case 0xfc: {
@@ -1242,10 +1379,8 @@ class Emulator {
       }
       case 0xfe: {
         // CPI D8
-        // TODO: still need this?
-        // const val = utils.subUnsigned(state.a, this.byteAt(1));
-        const { val, carry } = state.a.sub(this.byteAt(1));
-        this.setFlags(val, carry);
+        const val = state.a.sub(this.byteAt(1));
+        this.setFlags(val, true);
         state.pc.incr(2);
         break;
       }
@@ -1253,26 +1388,42 @@ class Emulator {
         // RST 7
         break;
       }
-      default:
+      default: {
         this.unimplementedInstruction(-1);
+      }
     }
+
+    this.instructionNumber++;
+    return cycles8080[opcode];
   };
 
-  setFlags = (n: Uint, carry?: number): void => {
+  updateRam(location: number, value: Uint) {
     const { state } = this;
-    state.cc.z = bit((n.val() & 0xff) === 0);
-    state.cc.s = bit((n.val() & 0x80) !== 0);
+
+    state.memory[location] = value;
+
+    if (location >= 0x2400 && location <= 0x3fff) {
+      // video ram
+      this.send(location, value.val(), true);
+    }
+  }
+
+  private setFlags = (n: Uint, carry?: boolean): void => {
+    const { state } = this;
+    state.cc.z = toBit((n.val() & 0xff) === 0);
+    state.cc.s = toBit((n.val() & 0x80) !== 0);
+    state.cc.ac = n.auxCarry;
     state.cc.p = this.parity(n.val());
 
     if (carry) {
-      this.setCarryBit(carry);
+      this.setCarryBit(n.carry);
     }
   };
 
-  setCarryBit = (n: number) => (this.state.cc.cy = bit(n));
+  private setCarryBit = (n: Bit) => (this.state.cc.cy = n);
 
-  parity = (n: number): Uint8 => {
-    return bit(n % 2 === 1 ? 0 : 1);
+  private parity = (n: number): Bit => {
+    return toBit(n % 2 === 1 ? 0 : 1);
     // let calc = n & 0xff;
     // let parity = 0;
     // while (calc) {
@@ -1282,7 +1433,7 @@ class Emulator {
     // return bit(parity);
   };
 
-  mov = (srcKey: string, destKey: string): void => {
+  private mov = (srcKey: string, destKey: string): void => {
     if (srcKey === 'm' || destKey === 'm') {
       throw new Error('src and dest cannot be a memory location');
     }
@@ -1294,7 +1445,7 @@ class Emulator {
     state.pc.incr(1);
   };
 
-  movMem = (srcKey: string, destKey: string): void => {
+  private movMem = (srcKey: string, destKey: string): void => {
     if (srcKey !== 'm' && destKey !== 'm') {
       throw new Error('must specify a memory location');
     }
@@ -1310,7 +1461,17 @@ class Emulator {
     state.pc.incr(1);
   };
 
-  unimplementedInstruction = (opcode: number) => {
+  private rotate = (accum: Uint8) => {
+    const binary = accum.val().toString(2);
+
+    this.setCarryBit(toBit(Number(binary[0])));
+
+    const transform = binary.slice(2) + binary.slice(0, 1);
+
+    accum = new Uint8(parseInt(transform, 2));
+  };
+
+  private unimplementedInstruction = (opcode: number) => {
     const { state } = this;
     throw new Error(
       `Unimplemented code at instruction ${
@@ -1320,15 +1481,14 @@ class Emulator {
   };
 }
 
-const app = new Emulator({
-  debug: true,
-});
+// const app = new Emulator({
+//   debug: true,
+// });
 
-try {
-  app.run();
-} catch (error) {
-  console.log(app.instructionNumber);
-  console.log(error);
-}
-
-module.exports = Emulator;
+// try {
+//   app.run();
+// } catch (error) {
+//   console.log(app.instructionNumber);
+//   console.log(error);
+// }
+export default Emulator;

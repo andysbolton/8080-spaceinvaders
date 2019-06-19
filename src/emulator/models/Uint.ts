@@ -1,8 +1,10 @@
-import Ret from './Ret';
+import Bit from './Bit';
 
 export default abstract class Uint {
   protected num: number;
   protected max: number;
+  public carry: Bit = 0;
+  public auxCarry: Bit = 0;
 
   constructor(max: number, n: number = 0) {
     this.max = max;
@@ -21,9 +23,9 @@ export default abstract class Uint {
     return this.num === 0;
   }
 
-  public abstract add(n: Uint): Ret;
+  public abstract add(n: Uint): Uint;
 
-  public abstract sub(n: Uint): Ret;
+  public abstract sub(n: Uint): Uint;
 
   public incr(n: number): number {
     const val = (this.num + n) & this.max;
@@ -41,7 +43,13 @@ export default abstract class Uint {
     return this.num.toString(16);
   }
 
-  protected checkCarry(val: number): number {
-    return val < 0 || val > this.max ? 1 : 0;
+  protected checkCarry(val: number): { carry: Bit; auxCarry: Bit } {
+    const carry = val < 0 || val > this.max ? 1 : 0;
+    const auxCarry = val < 0 || val > this.max / 2 ? 1 : 0;
+
+    return {
+      carry,
+      auxCarry,
+    };
   }
 }

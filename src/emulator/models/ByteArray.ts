@@ -1,6 +1,8 @@
-import Uint8 from "./Uint8";
+import Uint8 from './Uint8';
 
 export default class ByteArray extends Array {
+  [key: number]: Uint8;
+
   private max: number = 0;
 
   private constructor() {
@@ -11,8 +13,6 @@ export default class ByteArray extends Array {
     return Object.create(ByteArray.prototype);
   }
 
-  [key: number]: Uint8;
-
   public alloc(n: number) {
     this.max = n;
     this.fill(new Uint8(), n);
@@ -21,6 +21,6 @@ export default class ByteArray extends Array {
   public set(n: Array<number>) {
     n.forEach((val, indx) => {
       this[indx] = new Uint8(val);
-    })
+    });
   }
 }

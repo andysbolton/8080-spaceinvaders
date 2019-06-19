@@ -89,7 +89,6 @@ class Instructions {
       this.iterateOffset();
 
       let bytes = this.take(res.bytes - 1);
-
       bytes = bytes.map(val => val.padStart(2, '0'));
 
       if (command.includes('adr')) {

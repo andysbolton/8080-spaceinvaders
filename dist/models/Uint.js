@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Uint = /** @class */ (function () {
     function Uint(max, n) {
         if (n === void 0) { n = 0; }
+        this.carry = 0;
+        this.auxCarry = 0;
         this.max = max;
         this.num = n & this.max;
     }
@@ -37,7 +39,12 @@ var Uint = /** @class */ (function () {
         configurable: true
     });
     Uint.prototype.checkCarry = function (val) {
-        return val < 0 || val > this.max ? 1 : 0;
+        var carry = val < 0 || val > this.max ? 1 : 0;
+        var auxCarry = val < 0 || val > this.max / 2 ? 1 : 0;
+        return {
+            carry: carry,
+            auxCarry: auxCarry,
+        };
     };
     return Uint;
 }());

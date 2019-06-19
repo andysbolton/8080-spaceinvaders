@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// @flow
 var Uint8_1 = __importDefault(require("./Uint8"));
 var Uint16_1 = __importDefault(require("./Uint16"));
 var ConditionCodes_1 = __importDefault(require("./ConditionCodes"));
