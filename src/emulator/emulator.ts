@@ -172,7 +172,7 @@ export class Emulator implements IColleague {
     //   this.log(state.pc.val(), opcode);
     // }
 
-    if (this.instructionNumber === 37350) {
+    if (this.instructionNumber === 40000) {
       debugger;
     }
 
@@ -439,8 +439,9 @@ export class Emulator implements IColleague {
       }
       case 0x32: {
         // STA adr
-        const address = utils.concatUint(this.byteAt(2), this.byteAt(1));
-        state.memory[address.val()] = state.a;
+        const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
+        // state.memory[addr.val()] = state.a;
+        this.updateRam(addr.val(), state.a);
         state.pc.incr(3);
         break;
       }
@@ -458,11 +459,7 @@ export class Emulator implements IColleague {
       }
       case 0x36: {
         // MVI M, D8
-        // const addr = this.concatUint(this.state.h, this.state.l);
-        // state.memory[state.hl.val()] = this.byteAt(1);
-        // this.send(state.hl.val(), this.byteAt(1).val(), true);
         this.updateRam(state.hl.val(), this.byteAt(1));
-        // this.send(state.hl.val(), this.byteAt(1).val());
         state.pc.incr(2);
         break;
       }
@@ -1076,8 +1073,10 @@ export class Emulator implements IColleague {
       }
       case 0xc5: {
         // PUSH B
-        state.memory[state.sp.decr(1)] = state.b;
-        state.memory[state.sp.decr(1)] = state.c;
+        // state.memory[state.sp.decr(1)] = state.b;
+        // state.memory[state.sp.decr(1)] = state.c;
+        this.updateRam(state.sp.decr(1), state.b);
+        this.updateRam(state.sp.decr(1), state.c);
         state.pc.incr(1);
         break;
       }
@@ -1127,8 +1126,11 @@ export class Emulator implements IColleague {
         const val = state.pc.add(new Uint8(3));
         const { high, low } = utils.split(val);
 
-        state.memory[state.sp.decr(1)] = high;
-        state.memory[state.sp.decr(1)] = low;
+        // state.memory[state.sp.decr(1)] = high;
+        // state.memory[state.sp.decr(1)] = low;
+        this.updateRam(state.sp.decr(1), high);
+        this.updateRam(state.sp.decr(1), low);
+
         state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
         break;
       }
@@ -1177,8 +1179,8 @@ export class Emulator implements IColleague {
       }
       case 0xd5: {
         // PUSH D
-        state.memory[state.sp.decr(1)] = state.d;
-        state.memory[state.sp.decr(1)] = state.e;
+        this.updateRam(state.sp.decr(1), state.d);
+        this.updateRam(state.sp.decr(1), state.e);
         state.pc.incr(1);
         break;
       }
@@ -1254,8 +1256,11 @@ export class Emulator implements IColleague {
       }
       case 0xe5: {
         // PUSH H
-        state.memory[state.sp.decr(1)] = state.h;
-        state.memory[state.sp.decr(1)] = state.l;
+        // state.memory[state.sp.decr(1)] = state.h;
+        // state.memory[state.sp.decr(1)] = state.l;
+        this.updateRam(state.sp.decr(1), state.h);
+        this.updateRam(state.sp.decr(1), state.l);
+
         state.pc.incr(1);
         break;
       }
@@ -1338,8 +1343,11 @@ export class Emulator implements IColleague {
       }
       case 0xf5: {
         // PUSH PSW
-        state.memory[state.sp.decr(1)] = state.a;
-        state.memory[state.sp.decr(1)] = state.cc.getPsw();
+        // state.memory[state.sp.decr(1)] = state.a;
+        // state.memory[state.sp.decr(1)] = state.cc.getPsw();
+        this.updateRam(state.sp.decr(1), state.a);
+        this.updateRam(state.sp.decr(1), state.cc.getPsw());
+
         state.pc.incr(1);
         break;
       }
@@ -1404,6 +1412,7 @@ export class Emulator implements IColleague {
 
     if (location >= 0x2400 && location <= 0x3fff) {
       // video ram
+      console.log(location, value.val());
       this.send(location, value.val(), true);
     }
   }
@@ -1453,9 +1462,11 @@ export class Emulator implements IColleague {
     const { state } = this;
 
     if (srcKey === 'm') {
-      state.memory[state.hl.val()] = state[destKey];
+      // state.memory[state.hl.val()] = state[destKey];
+      this.updateRam(state.hl.val(), state[destKey]);
     } else {
-      state[srcKey] = state.memory[state.hl.val()];
+      // state[srcKey] = state.memory[state.hl.val()];
+      this.updateRam(state[srcKey], state.memory[state.hl.val()]);
     }
 
     state.pc.incr(1);
