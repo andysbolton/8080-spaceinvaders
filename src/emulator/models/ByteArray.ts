@@ -14,13 +14,14 @@ export default class ByteArray extends Array {
   }
 
   public alloc(n: number) {
-    this.max = n;
-    this.fill(new Uint8(), n);
+    for (let i = 0; i < n; i++) {
+      this.push(new Uint8());
+    }
   }
 
   public set(n: Array<number>) {
-    n.forEach((val, indx) => {
-      this[indx] = new Uint8(val);
+    n.forEach(val => {
+      this.push(new Uint8(val));
     });
   }
 }

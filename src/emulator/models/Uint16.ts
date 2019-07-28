@@ -1,5 +1,6 @@
 // @flow
 import Uint from './Uint';
+import Bit, { toBit } from './Bit';
 
 export default class Uint16 extends Uint {
   constructor(n?: number) {
@@ -38,5 +39,30 @@ export default class Uint16 extends Uint {
     ret.auxCarry = auxCarry;
 
     return ret;
+  }
+
+  public or(n: Uint | number): Uint16 {
+    let val;
+    if (typeof n === 'number') {
+      val = this.num | n;
+    } else {
+      val = this.num | n.val();
+    }
+
+    const ret = new Uint16(val);
+
+    const { carry, auxCarry } = this.checkCarry(val);
+    ret.carry = carry;
+    ret.auxCarry = auxCarry;
+
+    return ret;
+  }
+
+  public get highOrderBit(): Bit {
+    return toBit(this.num >> 15);
+  }
+
+  public rotateLeft(): Uint16 {
+    return new Uint16((this.num << 1) & 0xffff);
   }
 }

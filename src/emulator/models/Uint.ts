@@ -1,4 +1,4 @@
-import Bit from './Bit';
+import Bit, { toBit } from './Bit';
 
 export default abstract class Uint {
   protected num: number;
@@ -26,6 +26,16 @@ export default abstract class Uint {
   public abstract add(n: Uint): Uint;
 
   public abstract sub(n: Uint): Uint;
+
+  public abstract or(n: Uint | number): Uint;
+
+  public abstract get highOrderBit(): Bit;
+
+  public get lowOrderBit(): Bit {
+    return toBit(this.num & 1);
+  }
+
+  public abstract rotateLeft(): Uint;
 
   public incr(n: number): number {
     const val = (this.num + n) & this.max;
