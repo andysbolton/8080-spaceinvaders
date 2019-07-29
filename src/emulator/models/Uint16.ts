@@ -65,4 +65,8 @@ export default class Uint16 extends Uint {
   public rotateLeft(): Uint16 {
     return new Uint16((this.num << 1) & 0xffff);
   }
+
+  public clone(): Uint16 {
+    return new Uint16(this.num);
+  }
 }

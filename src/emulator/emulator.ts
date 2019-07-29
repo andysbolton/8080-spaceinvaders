@@ -137,14 +137,13 @@ export class Emulator implements IColleague {
 
       if (this.cycles >= cyclesUntilInterrupt) {
         if (toBit(this.state.intEnable.val())) {
-          // if (this.lastInterrupt === 2) {
-          //   this.generateInterrupt(1);
-          //   this.lastInterrupt = 1;
-          // } else {
-          //   this.generateInterrupt(2);
-          //   this.lastInterrupt = 2;
-          // }
-          this.generateInterrupt(2);
+          if (this.lastInterrupt === 2) {
+            this.generateInterrupt(1);
+            this.lastInterrupt = 1;
+          } else {
+            this.generateInterrupt(2);
+            this.lastInterrupt = 2;
+          }
           this.state.intEnable = new Uint8(0);
         }
         this.cycles -= cyclesUntilInterrupt;
@@ -200,17 +199,17 @@ export class Emulator implements IColleague {
     const { state } = this;
     const opcode = state.memory[state.pc.val()].val();
 
-    if (
-      this.debug &&
-      this.instructionNumber >= 45000 - 2
-      // && this.instructionNumber % 25 === 0
-    ) {
-      this.log(state.pc.val(), opcode);
-    }
+    // if (
+    //   this.debug &&
+    //   this.instructionNumber >= 50590 - 2
+    //   // && this.instructionNumber % 25 === 0
+    // ) {
+    //   this.log(state.pc.val(), opcode);
+    // }
 
-    if (this.instructionNumber === 45000) {
-      debugger;
-    }
+    // if (this.instructionNumber === 50590) {
+    //   debugger;
+    // }
 
     switch (opcode) {
       case 0x00: {
@@ -229,7 +228,10 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x03: {
-        this.unimplementedInstruction(opcode);
+        // INX B
+        const val = state.bc.add(1);
+        state.bc = val;
+        state.pc.incr(1);
         break;
       }
       case 0x04: {
@@ -275,7 +277,6 @@ export class Emulator implements IColleague {
       }
       case 0x09: {
         // DAD B
-        // const res = this.concatUint(this.state.b, this.state.c);
         const val = state.hl.add(state.bc);
         state.hl = val;
         this.setCarryBit(val.carry);
@@ -283,7 +284,9 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x0a: {
-        this.unimplementedInstruction(opcode);
+        // LDAX B
+        state.a = state.memory[state.bc.val()];
+        state.pc.incr(1);
         break;
       }
       case 0x0b: {
@@ -334,12 +337,8 @@ export class Emulator implements IColleague {
       }
       case 0x13: {
         // INX D
-        // const bytes = this.concatUint(state.d, state.e);
         const val = state.de.add(1);
         state.de = val;
-        // const { high, low } = this.split(bytes.val());
-        // state.d = high;
-        // state.e = low;
         state.pc.incr(1);
         break;
       }
@@ -396,7 +395,9 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x1e: {
-        this.unimplementedInstruction(opcode);
+        // MVI E, D8
+        state.e = this.byteAt(1);
+        state.pc.incr(2);
         break;
       }
       case 0x1f: {
@@ -431,7 +432,14 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x22: {
-        this.unimplementedInstruction(opcode);
+        // SHLD addr
+        const location = utils.concat(
+          this.byteAt(2).val(),
+          this.byteAt(1).val()
+        );
+        this.updateRam(location, state.l);
+        this.updateRam(location + 1, state.h);
+        state.pc.incr(3);
         break;
       }
       case 0x23: {
@@ -478,7 +486,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x2a: {
-        // LHLD adr
+        // LHLD addr
         const location = utils.concat(
           this.byteAt(2).val(),
           this.byteAt(1).val()
@@ -503,7 +511,9 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x2e: {
-        this.unimplementedInstruction(opcode);
+        // MVI L, D8
+        state.l = this.byteAt(1);
+        state.pc.incr(2);
         break;
       }
       case 0x2f: {
@@ -523,7 +533,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x32: {
-        // STA adr
+        // STA addr
         const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
         this.updateRam(addr.val(), state.a);
         state.pc.incr(3);
@@ -553,7 +563,9 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x37: {
-        this.unimplementedInstruction(opcode);
+        // STC
+        this.setCarryBit(1);
+        state.pc.incr(1);
         break;
       }
       case 0x38: {
@@ -561,13 +573,17 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x39: {
-        this.unimplementedInstruction(opcode);
+        // DAD SP
+        const val = state.hl.add(state.sp);
+        state.hl = val;
+        this.setCarryBit(val.carry);
+        state.pc.incr(1);
         break;
       }
       case 0x3a: {
-        // LDA adr
-        const adr = utils.concatUint(this.byteAt(2), this.byteAt(1));
-        state.a = state.memory[adr.val()];
+        // LDA addr
+        const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
+        state.a = state.memory[addr.val()];
         state.pc.incr(3);
         break;
       }
@@ -604,20 +620,25 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x41:
-        state.b = state.c;
+        // MOV B, C
+        this.mov('b', 'c');
         break;
       case 0x42:
-        state.b = state.d;
+        // MOV B, D
+        this.mov('b', 'd');
         break;
       case 0x43:
-        state.b = state.e;
+        // MOV B, E
+        this.mov('b', 'e');
         break;
       case 0x44: {
-        this.unimplementedInstruction(opcode);
+        // MOV B, H
+        this.mov('b', 'h');
         break;
       }
       case 0x45: {
-        this.unimplementedInstruction(opcode);
+        // MOV B, L
+        this.mov('b', 'l');
         break;
       }
       case 0x46: {
@@ -630,11 +651,13 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x48: {
-        this.unimplementedInstruction(opcode);
+        // MOV C, B
+        this.mov('c', 'b');
         break;
       }
       case 0x49: {
-        this.unimplementedInstruction(opcode);
+        // MOV C, C
+        this.mov('c', 'c');
         break;
       }
       case 0x4a: {
@@ -646,7 +669,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x4c: {
-        this.unimplementedInstruction(opcode);
+        // MOV C, H
+        this.mov('c', 'h');
         break;
       }
       case 0x4d: {
@@ -658,7 +682,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x4f: {
-        this.unimplementedInstruction(opcode);
+        // MOV C, A
+        this.mov('c', 'a');
         break;
       }
       case 0x50: {
@@ -666,7 +691,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x51: {
-        this.unimplementedInstruction(opcode);
+        // MOV D, C
+        this.mov('d', 'c');
         break;
       }
       case 0x52: {
@@ -691,7 +717,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x57: {
-        this.unimplementedInstruction(opcode);
+        // MOV D, A
+        this.mov('d', 'a');
         break;
       }
       case 0x58: {
@@ -724,7 +751,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x5f: {
-        // 	MOV E, A
+        // MOV E, A
         this.mov('e', 'a');
         break;
       }
@@ -733,19 +760,23 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x61: {
-        this.unimplementedInstruction(opcode);
+        // MOV H, C
+        this.mov('h', 'c');
         break;
       }
       case 0x62: {
-        this.unimplementedInstruction(opcode);
+        // MOV H, D
+        this.mov('h', 'd');
         break;
       }
       case 0x63: {
-        this.unimplementedInstruction(opcode);
+        // MOV H, E
+        this.mov('h', 'e');
         break;
       }
       case 0x64: {
-        this.unimplementedInstruction(opcode);
+        // MOV H, H
+        this.mov('h', 'h');
         break;
       }
       case 0x65: {
@@ -834,7 +865,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x79: {
-        this.unimplementedInstruction(opcode);
+        // 	MOV A, C
+        this.mov('a', 'c');
         break;
       }
       case 0x7a: {
@@ -863,7 +895,8 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x7f: {
-        this.unimplementedInstruction(opcode);
+        // MOV A, A
+        this.mov('a', 'a');
         break;
       }
       case 0x80: {
@@ -871,6 +904,7 @@ export class Emulator implements IColleague {
         const val = state.a.add(state.b);
         this.setFlags(val, true);
         state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x81: {
@@ -878,27 +912,43 @@ export class Emulator implements IColleague {
         const val = state.a.add(state.c);
         this.setFlags(val, true);
         state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x82: {
-        this.unimplementedInstruction(opcode);
+        // ADD D
+        const val = state.a.add(state.d);
+        this.setFlags(val, true);
+        state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x83: {
-        this.unimplementedInstruction(opcode);
+        // ADD E
+        const val = state.a.add(state.e);
+        this.setFlags(val, true);
+        state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x84: {
-        this.unimplementedInstruction(opcode);
+        // ADD H
+        const val = state.a.add(state.h);
+        this.setFlags(val, true);
+        state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x85: {
-        this.unimplementedInstruction(opcode);
+        // ADD L
+        const val = state.a.add(state.l);
+        this.setFlags(val, true);
+        state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x86: {
         // ADD M
-        // const offset = (state.h.val() << 8) | state.l.val();
         const val = state.a.add(state.memory[state.hl.val()]);
         this.setFlags(val, true);
         state.a = val;
@@ -1102,7 +1152,12 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xb6: {
-        this.unimplementedInstruction(opcode);
+        // ORA M
+        const val = state.a.or(state.hl);
+        state.a = val;
+        this.setCarryBit(0);
+        this.setFlags(val);
+        state.pc.incr(1);
         break;
       }
       case 0xb7: {
@@ -1178,7 +1233,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xc4: {
-        // CNZ adr
+        // CNZ addr
         if (state.cc.z === 0) {
           const val = state.pc.add(new Uint8(3));
           const { high, low } = utils.split(val);
@@ -1238,7 +1293,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xca: {
-        // JZ adr
+        // JZ addr
         if (state.cc.z === 1) {
           const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
           state.pc = addr;
@@ -1252,7 +1307,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xcc: {
-        // CZ adr
+        // CZ addr
         if (state.cc.z === 1) {
           const val = state.pc.add(new Uint8(3));
           const { high, low } = utils.split(val);
@@ -1351,7 +1406,16 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xd8: {
-        this.unimplementedInstruction(opcode);
+        // RC
+        if (state.cc.cy === 1) {
+          const low = state.memory[state.sp.val()];
+          const high = state.memory[state.sp.incr(1)];
+
+          state.pc = utils.concatUint(high, low);
+          state.sp.incr(1);
+        } else {
+          state.pc.incr(1);
+        }
         break;
       }
       case 0xd9: {
@@ -1359,12 +1423,13 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xda: {
-        // JC adr
+        // JC addr
         if (state.cc.cy === 1) {
           const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
           state.pc = addr;
+        } else {
+          state.pc.incr(3);
         }
-        state.pc.incr(3);
         break;
       }
       case 0xdb: {
@@ -1411,12 +1476,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xe4: {
-        // CPO
-        // TODO: need else?
         this.unimplementedInstruction(opcode);
-        if (state.cc.p === 0) {
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
-        }
         break;
       }
       case 0xe5: {
@@ -1451,7 +1511,7 @@ export class Emulator implements IColleague {
         break;
       }
       case 0xea: {
-        // JPE adr
+        // JPE addr
         // if parity equals 1 that indicates it's even
         if (state.cc.p === 1) {
           // const addr = utils.concatUint(this.byteAt(2), this.byteAt(1));
@@ -1571,6 +1631,13 @@ export class Emulator implements IColleague {
       }
       case 0xff: {
         // RST 7
+        // TODO: is this wrong?
+        const { high, low } = utils.split(state.pc.add(2));
+
+        this.updateRam(state.sp.decr(1), high);
+        this.updateRam(state.sp.decr(1), low);
+
+        state.pc = new Uint8(0x38);
         break;
       }
       default: {
@@ -1585,7 +1652,7 @@ export class Emulator implements IColleague {
   updateRam(location: number, value: Uint) {
     const { state } = this;
 
-    state.memory.splice(location, 1, value);
+    state.memory.splice(location, 1, value.clone());
 
     if (location >= 0x2400 && location <= 0x3fff) {
       // video ram
@@ -1625,7 +1692,7 @@ export class Emulator implements IColleague {
 
     const { state } = this;
 
-    state[srcKey] = state[destKey];
+    state[srcKey] = state[destKey].clone();
 
     state.pc.incr(1);
   };
@@ -1638,11 +1705,9 @@ export class Emulator implements IColleague {
     const { state } = this;
 
     if (srcKey === 'm') {
-      // state.memory[state.hl.val()] = state[destKey];
       this.updateRam(state.hl.val(), state[destKey]);
     } else {
-      state[srcKey] = state.memory[state.hl.val()];
-      // this.updateRam(state[srcKey], state.hl, 'm');
+      state[srcKey] = state.memory[state.hl.val()].clone();
     }
 
     state.pc.incr(1);

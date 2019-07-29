@@ -65,4 +65,8 @@ export default class Uint8 extends Uint {
   public rotateLeft(): Uint8 {
     return new Uint8((this.num << 1) & 0xff);
   }
+
+  public clone(): Uint8 {
+    return new Uint8(this.num);
+  }
 }
