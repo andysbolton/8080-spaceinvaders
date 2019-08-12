@@ -19,9 +19,9 @@ export default class ByteArray extends Array {
     }
   }
 
-  public set(n: Array<number>) {
-    n.forEach(val => {
-      this.push(new Uint8(val));
+  public set(n: Array<number>, offset: number = 0) {
+    n.forEach((val, index) => {
+      this.splice(offset + index, 1, new Uint8(val));
     });
   }
 }

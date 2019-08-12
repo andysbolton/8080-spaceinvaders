@@ -7,7 +7,7 @@ export interface IMediator {
 
   registerIn(colleague: IColleague): void;
   registerOut(colleague: IColleague): void;
-  sendOut(port: number, pos: number, bit: Bit): void;
-  sendIn(port: number, pos: number, bit: Bit): void;
+  sendOut(port: number, pos: number, bit?: Bit): void;
+  sendIn(port: number, pos: number, bit?: Bit): void;
   updateScreen(addr: number, val: number): void;
 }

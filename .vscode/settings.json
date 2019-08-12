@@ -1,5 +1,13 @@
 {
     "editor.tabSize": 2,
     "editor.detectIndentation": false,
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "C_Cpp.errorSquiggles": "Enabled",
+    "files.associations": {
+      "emulator101.h": "c",
+      "stdint.h": "c",
+      "string.h": "c",
+      "stdlib.h": "c",
+      "time.h": "c"
+    }
 }

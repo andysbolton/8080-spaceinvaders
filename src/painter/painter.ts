@@ -1,6 +1,9 @@
 import { IMediator } from './../common/interfaces/IMediator';
 import { IColleague } from './../common/interfaces/IColleague';
 import Bit from '../emulator/models/Bit';
+import Uint16 from '../emulator/models/Uint16';
+import Uint8 from '../emulator/models/Uint8';
+import utils from '../emulator/utils/utils';
 
 export class Painter implements IColleague {
   private canvas: HTMLCanvasElement | undefined;
@@ -10,6 +13,8 @@ export class Painter implements IColleague {
   // private _painterCount: number = 0;
   // private _x: number = 0x0;
   private events: Events;
+  private shiftRegister: Uint16 = new Uint16();
+  private shiftOffset: number = 0;
 
   constructor(mediator: IMediator) {
     this.canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -19,12 +24,12 @@ export class Painter implements IColleague {
     this.events.init();
   }
 
-  send(port: number, pos: number, bit: Bit): void {
-    this.mediator.sendIn(port, pos, bit);
+  send(port: number, val: number, bit?: Bit): void {
+    this.mediator.sendIn(port, val, bit);
   }
 
-  receive(port: number, pos: number, bit: Bit): void {
-    this.write(port, pos, bit);
+  receive(port: number, val: number, bit?: Bit): void {
+    this.write(port, val);
   }
 
   updateScreen(addr: number, val: number) {
@@ -47,59 +52,48 @@ export class Painter implements IColleague {
     }
   }
 
-  //   receive(port: number, val: number, isRam: boolean): void {
-  //   if (port >= 0x2400) {
-  //     // const { high, low } = utils.split(new Uint16(port));
-  //     // this.paint(high.val(), low.val(), val);
-  //     let base = port - 0x2400;
-  //     let y = ~(((base & 0x1f) * 8) & 0xff) & 0xff;
-  //     let x = base >> 5;
-
-  //     const sprite = val.toString(2).padEnd(8, '0');
-  //     console.log(sprite);
-
-  //     for (let i = 0; i < sprite.length; i++) {
-  //       this.paint(x, y + i, toBit(sprite.charAt(i)));
-  //     }
-  //   } else {
-  //     this.write(port, val);
-  //   }
-  // }
-
-  // private paint(x: number, y: number, on: Bit) {
-  //   if (this.context) {
-  //     this.context.clearRect(x, y, 1, 1);
-  //     this.context.fillStyle = on ? 'white' : 'black';
-  //     this.context.fillRect(x, y, 1, 1);
-  //   }
-  //}
-
-  // private onKeyPress(port: number, pos: number, val: Bit) {
-  //   this.send(port, pos, val);
-  // }
-
-  private write(port: number, pos: number, bit: Bit) {
+  private write = (port: number, val: number) => {
+    if (port === 6) {
+      return;
+    }
     switch (port) {
       case 2: // shift register result offset (bits 0,1,2)
-        console.log('yep');
-        // this.unimplementedInstruction(port, val);
+        // if (val === 0) {
+        //   offset = 0;
+        // } else if (val === 1) {
+        //   offset = 2;
+        // } else if (val === 2) {
+        //   offset = 7;
+        // }
+
+        // if (offset !== undefined) {
+        this.shiftOffset = val & 0x7;
+        // }
         break;
       case 3: //sound related
-        this.unimplementedInstruction(port, pos);
+        this.unimplementedInstruction(port, val);
         break;
       case 4: // fill shift register
-        this.unimplementedInstruction(port, pos);
+        const { high, low } = utils.split(this.shiftRegister);
+
+        this.shiftRegister = new Uint16((val << 8) | high.val());
+
+        const shifted = new Uint8(
+          (this.shiftRegister.val() << this.shiftOffset) >> 8
+        );
+
+        this.send(3, shifted.val());
         break;
       case 5: // sound related
-        this.unimplementedInstruction(port, pos);
+        this.unimplementedInstruction(port, val);
         break;
       case 6: // debug port
-        this.unimplementedInstruction(port, pos);
+        this.unimplementedInstruction(port, val);
         break;
       default:
         break;
     }
-  }
+  };
 
   private unimplementedInstruction = (port: number, val: number) => {
     console.log(`Unimplemented code: port ${port} with value ${val}`);
@@ -118,11 +112,36 @@ class Events {
     window.onkeydown = e => {
       const key = e.keyCode ? e.keyCode : e.which;
 
+      console.log('pressed ', key);
+
       switch (key) {
         case 16: {
-          // shift
+          // shift (credit)
           this.onKeyPress(1, 0, 1);
+          break;
         }
+        case 37: {
+          // key left (left)
+          this.onKeyPress(0, 6, 1);
+          break;
+        }
+        case 39: {
+          // key right (right)
+          this.onKeyPress(0, 5, 1);
+          break;
+        }
+        case 32: {
+          // space (fire)
+          this.onKeyPress(0, 4, 1);
+          break;
+        }
+        case 49: {
+          // 1 (first player start)
+          this.onKeyPress(1, 2, 1);
+          break;
+        }
+        default:
+          break;
       }
     };
   }

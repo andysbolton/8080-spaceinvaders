@@ -27,8 +27,6 @@ export default abstract class Uint {
 
   public abstract sub(n: Uint): Uint;
 
-  public abstract or(n: Uint | number): Uint;
-
   public abstract clone(): Uint;
 
   public abstract get highOrderBit(): Bit;
