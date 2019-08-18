@@ -28,6 +28,24 @@
       "request": "launch",
       "name": "Debug instruct`ions",
       "program": "${workspaceFolder}\\instructions.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Current Test",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": [
+        "--runInBand",
+        "${fileBasename}",
+        "--testNamePattern",
+        "${selectedText}"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true,
+      "windows": {
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      }
     }
   ]
 }

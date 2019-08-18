@@ -1,69 +1,67 @@
-// @flow
-import { IMediator } from './../common/interfaces/IMediator';
-import { IColleague } from './../common/interfaces/IColleague';
-import Uint8 from './models/Uint8';
-import Uint from './models/Uint';
-import CpuState from './models/CpuState';
-import utils from './utils/utils';
 import Bit, { toBit } from './models/Bit';
-import { bit } from './utils/bit';
-import Uint16 from './models/Uint16';
 import ByteArray from './models/ByteArray';
-
-// const fs = require('fs');
+import CpuState from './models/CpuState';
+import Uint from './models/Uint';
+import Uint16 from './models/Uint16';
+import Uint8 from './models/Uint8';
+import utils from './utils/utils';
+import { IColleague } from './../common/interfaces/IColleague';
+import { IMediator } from './../common/interfaces/IMediator';
+import { bit } from './utils/bit';
 
 // prettier-ignore
 const cycles8080 = [
-	4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x00..0x0f
-	4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x10..0x1f
-	4, 10, 16, 5, 5, 5, 7, 4, 4, 10, 16, 5, 5, 5, 7, 4, //etc
-	4, 10, 13, 5, 10, 10, 10, 4, 4, 10, 13, 5, 5, 5, 7, 4,
-
-	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5, //0x40..0x4f
-	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5,
-	5, 5, 5, 5, 5, 5, 7, 5, 5, 5, 5, 5, 5, 5, 7, 5,
-	7, 7, 7, 7, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5, 7, 5,
-
-	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4, //0x80..8x4f
-	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
-	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
-	4, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4, 4, 4, 7, 4,
-
-	11, 10, 10, 10, 17, 11, 7, 11, 11, 10, 10, 10, 10, 17, 7, 11, //0xc0..0xcf
-	11, 10, 10, 10, 17, 11, 7, 11, 11, 10, 10, 10, 10, 17, 7, 11,
-	11, 10, 10, 18, 17, 11, 7, 11, 11, 5, 10, 5, 17, 17, 7, 11,
-	11, 10, 10, 4, 17, 11, 7, 11, 11, 5, 10, 4, 17, 17, 7, 11,
+  //  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 0
+      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 1
+      4,  10, 16, 5,  5,  5,  7,  4,  4,  10, 16, 5,  5,  5,  7,  4,  // 2
+      4,  10, 13, 5,  10, 10, 10, 4,  4,  10, 13, 5,  5,  5,  7,  4,  // 3
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 4
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 5
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 6
+      7,  7,  7,  7,  7,  7,  7,  7,  5,  5,  5,  5,  5,  5,  7,  5,  // 7
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 8
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 9
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // A
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // B
+      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // C
+      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // D
+      5,  10, 10, 18, 11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11, // E
+      5,  10, 10, 4,  11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11  // F
 ];
 
 // CPU running at 2mhz, 2 interrupts running at 60mhz
 const cyclesUntilInterrupt: number = Math.ceil(2000000 / 60 / 2);
 
-export class Emulator implements IColleague {
+class Emulator implements IColleague {
   debug: boolean;
   state: CpuState;
-  // out: Buffer;
   in: ByteArray;
   mediator: IMediator;
   instructionNumber: number = 0;
   lastInterrupt: number = 1;
   cycles: number = 0;
+  test: boolean = false;
+  testComplete: boolean = false;
 
   constructor({
     mediator,
     debug,
+    test,
   }: {
     mediator: IMediator;
-    web: boolean;
+    test?: boolean;
     debug?: boolean;
   }) {
     this.state = new CpuState();
     this.state.memory.alloc(0x10000);
-    // this.state.pc = new Uint16(0x100);
 
     const useDebug = !!debug;
+    const useTest = !!test;
 
     this.mediator = mediator;
     this.debug = useDebug;
+    this.test = useTest;
 
     this.in = ByteArray.create();
     this.in.alloc(8);
@@ -81,133 +79,76 @@ export class Emulator implements IColleague {
     this.in.splice(port, 1, new Uint8(newVal));
   }
 
-  private modifyBit(number: number, pos: number, b: Bit) {
-    const mask = 1 << pos;
-    return (number & ~mask) | ((b << pos) & mask);
-  }
-
   updateScreen(addr: number, val: number) {
     this.mediator.updateScreen(addr, val);
   }
 
-  private byteAt = (index: number): Uint8 => {
-    const { state } = this;
-    return state.memory[state.pc.val() + index];
-  };
+  async init() {
+    const res = await fetch('invaders');
+    const buf = await res.arrayBuffer();
+    const view = new Uint8Array(buf);
+    const romBytes = [...view].map(Number);
+    this.state.memory.set([...romBytes]); //  ...ramBytes
 
-  init() {
-    // const ram = new Uint8Array(0x2000);
+    //Fix the first instruction to be JMP 0x100
+    // this.state.memory[0] = new Uint8(0xc3);
+    // this.state.memory[1] = new Uint8(0);
+    // this.state.memory[2] = new Uint8(0x01);
 
-    fetch('invaders.rom').then(res => {
-      res.arrayBuffer().then(buf => {
-        const view = new Uint8Array(buf);
-        const romBytes = [...view].map(Number);
-        // const ramBytes = [...ram].map(Number);
-        this.state.memory.set([...romBytes]); //  ...ramBytes
+    // // Fix the stack pointer from 0x6ad to 0x7ad
+    // // this 0x06 byte 112 in the code, which is
+    // // byte 112 + 0x100 = 368 in memory
+    // this.state.memory[368] = new Uint8(0x7);
 
-        //Fix the first instruction to be JMP 0x100
-        // this.state.memory[0] = new Uint8(0xc3);
-        // this.state.memory[1] = new Uint8(0);
-        // this.state.memory[2] = new Uint8(0x01);
+    // //Skip DAA test
+    // this.state.memory[0x59c] = new Uint8(0xc3); //JMP
+    // this.state.memory[0x59d] = new Uint8(0xc2);
+    // this.state.memory[0x59e] = new Uint8(0x05);
 
-        // // Fix the stack pointer from 0x6ad to 0x7ad
-        // // this 0x06 byte 112 in the code, which is
-        // // byte 112 + 0x100 = 368 in memory
-        // this.state.memory[368] = new Uint8(0x7);
+    // state.pc = new Uint16(0x100);
+    // // inject "out 1,a" at 0x0000 (signal to stop the test)
+    // state.memory[0x0000] = new Uint8(0xd3);
+    // state.memory[0x0001] = new Uint8(0x00);
 
-        // //Skip DAA test
-        // this.state.memory[0x59c] = new Uint8(0xc3); //JMP
-        // this.state.memory[0x59d] = new Uint8(0xc2);
-        // this.state.memory[0x59e] = new Uint8(0x05);
+    // // inject "in a,0" at 0x0005 (signal to output some characters)
+    // state.memory[0x0005] = new Uint8(0xdb);
+    // state.memory[0x0006] = new Uint8(0x00);
+    // state.memory[0x0007] = new Uint8(0xc9);
 
-        this.run();
-      });
-    });
+    this.run();
   }
 
-  private myDate = new Date();
-  private lastSecond = 0;
-  private countie = 0;
-  private lastTimer = 0;
-  private nextInterrupt = 16000;
-
-  private run = async () => {
+  run = async () => {
     const { state } = this;
+
     while (state.pc.val() > -1) {
-      if (this.instructionNumber % 1000 === 0) {
+      if (this.testComplete) {
+        break;
+      }
+
+      if (this.instructionNumber % 1000 === 0 && !this.test) {
         await new Promise(resolve => setTimeout(resolve, 5));
       }
 
-      this.cycles += this.readNext();
+      const next = this.readNext();
+      this.cycles += next;
 
-      // let seconds = new Date().getSeconds();
-      // if (seconds !== this.lastSecond) {
-      //   console.log(
-      //     'at',
-      //     this.lastSecond,
-      //     'ran',
-      //     this.countie,
-      //     'times, expecting 120'
-      //   );
-      //   this.lastSecond = seconds;
-      //   this.countie = 0;
-      // }
-      const now = new Date().getTime();
-
-      if (this.lastTimer === 0) {
-        this.lastTimer = now;
-        this.nextInterrupt = this.lastTimer + 16000;
-        this.lastInterrupt = 2;
-      }
-
-      if (this.state.intEnable.val() === 1 && now > this.nextInterrupt) {
-        if (this.lastInterrupt === 2) {
-          this.generateInterrupt(1);
-          this.lastInterrupt = 1;
-        } else {
-          this.generateInterrupt(2);
-          this.lastInterrupt = 2;
+      if (this.cycles >= cyclesUntilInterrupt && !this.test) {
+        if (this.state.intEnable.val() === 1) {
+          if (this.lastInterrupt === 2) {
+            this.generateInterrupt(1);
+            this.lastInterrupt = 1;
+          } else {
+            this.generateInterrupt(2);
+            this.lastInterrupt = 2;
+          }
+          this.state.intEnable = new Uint8(0);
         }
-        this.nextInterrupt = now + 8000;
+        this.cycles -= cyclesUntilInterrupt;
       }
-
-      const sinceLast = now - this.lastTimer;
-      const cyclesToCatchUp = 2 * sinceLast;
-      let cycles = 0;
-
-      while (cyclesToCatchUp > cycles) {
-        const opcode = state.memory[state.pc.val()].val();
-
-        if (opcode === 0xdb) {
-          state.a = this.in[this.byteAt(1).val()];
-          state.pc.incr(2);
-          cycles += 3;
-        } else if (opcode == 0xd3) {
-          this.send(this.byteAt(1).val(), state.a.val()); // TODO: Is this always supposed to be 1?
-          state.pc.incr(2);
-          cycles += 3;
-        } else {
-          cycles += this.readNext();
-        }
-      }
-
-      // if (this.cycles >= cyclesUntilInterrupt) {
-      //   // this.countie++;
-
-      //   if (this.state.intEnable.val() === 1) {
-      //     if (this.lastInterrupt === 2) {
-      //       this.generateInterrupt(1);
-      //       this.lastInterrupt = 1;
-      //     } else {
-      //       this.generateInterrupt(2);
-      //       this.lastInterrupt = 2;
-      //     }
-      //     this.state.intEnable = new Uint8(0);
-      //   }
-      //   this.cycles -= cyclesUntilInterrupt;
-      // }
-      this.lastTimer = now;
     }
+
+    return this.cycles;
   };
 
   private log = (counter: number, opcode: number): void => {
@@ -254,29 +195,12 @@ export class Emulator implements IColleague {
     state.pc = new Uint16(8 * interruptNum);
   }
 
-  private test = new Array<string>();
-
   private readNext = (): number => {
     const { state } = this;
     const opcode = state.memory[state.pc.val()].val();
 
-    // if (
-    //   this.debug &&
-    //   this.instructionNumber >= 42350 - 2
-    //   // && this.instructionNumber % 25 === 0
-    // ) {
-    // this.log(state.pc.val(), opcode);
-    // }
-
-    // if (this.instructionNumber === 539) {
-    //   debugger;
-    // }
-    if (this.instructionNumber === 2365219 - 10) {
-      debugger;
-    }
-
-    if (this.instructionNumber >= 2313474) {
-      this.test.push(`${this.instructionNumber} ${state.de} ${state.a}`);
+    if (this.debug) {
+      this.log(state.pc.val(), opcode);
     }
 
     switch (opcode) {
@@ -326,21 +250,6 @@ export class Emulator implements IColleague {
       }
       case 0x07: {
         // RLC
-        // const hob = state.a.highOrderBit;
-        // this.setCarryBit(hob);
-
-        // let val = state.a.rotateLeft().val();
-
-        // if (hob === 1) {
-        //   // set lsb to 1
-        //   val |= 1;
-        // } else {
-        //   // clear lsb
-        //   val &= ~1;
-        // }
-
-        // state.a = new Uint8(val);
-
         this.setCarryBit(state.a.highOrderBit);
         const a = ((state.a.val() & 0x80) >> 7) | (state.a.val() << 1);
         state.a = new Uint8(a);
@@ -447,18 +356,6 @@ export class Emulator implements IColleague {
       }
       case 0x17: {
         // RAL
-        // const carry = state.cc.cy;
-        // let rotated = this.state.a.rotateLeft().val();
-
-        // if (carry === 1) {
-        //   // set msb to 1
-        //   rotated |= 1 << 7;
-        // } else {
-        //   // clear msb
-        //   rotated &= ~(1 << 7);
-        // }
-
-        // state.a = new Uint8(rotated);
         const carry = state.cc.cy;
         this.setCarryBit(state.a.highOrderBit);
         const a = carry | (state.a.val() << 1);
@@ -513,21 +410,6 @@ export class Emulator implements IColleague {
       }
       case 0x1f: {
         // RAR
-        // const lob = this.state.a.lowOrderBit;
-
-        // this.setCarryBit(lob);
-
-        // let val = this.state.a.val();
-
-        // if (lob === 1) {
-        //   // set msb to 1
-        //   val |= 1 << 7;
-        // } else {
-        //   // clear msb
-        //   val &= ~(1 << 7);
-        // }
-
-        // state.a = new Uint8(val);
         const carry = state.cc.cy;
         state.cc.cy = state.a.lowOrderBit;
         const a = (carry << 7) | (state.a.val() >> 1);
@@ -585,7 +467,23 @@ export class Emulator implements IColleague {
         break;
       }
       case 0x27: {
-        this.unimplementedInstruction(opcode);
+        // DAA
+        let { high, low } = utils.split(state.a);
+
+        if (low.val() > 9 || state.cc.ac === 1) {
+          low = low.add(6);
+          state.cc.ac = toBit(low.carry);
+        }
+
+        if (high.val() > 9 || state.cc.cy === 1) {
+          high = high.add(6);
+          this.setCarryBit(high.carry);
+        }
+
+        const val = utils.concatUint(high, low);
+        this.setFlags(val);
+        state.a = val;
+        state.pc.incr(1);
         break;
       }
       case 0x28: {
@@ -1627,13 +1525,7 @@ export class Emulator implements IColleague {
       case 0xc4: {
         // CNZ addr
         if (state.cc.z === 0) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -1696,13 +1588,7 @@ export class Emulator implements IColleague {
       case 0xcc: {
         // CZ addr
         if (state.cc.z === 1) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -1710,16 +1596,6 @@ export class Emulator implements IColleague {
       }
       case 0xcd: {
         // CALL address
-
-        // if (state.c.val() == 9) {
-        //   const offset = (state.d.val() << 8) | state.e.val();
-        //   const str = state.memory[offset + 3]; //skip the prefix bytes
-        //   console.log(str);
-        // } else if (state.c.val() == 2) {
-        //   //saw this in the inspected code, never saw it called
-        //   console.log('print char routine called\n');
-        // }
-
         const val = state.pc.add(new Uint8(3));
         const { high, low } = utils.split(val);
 
@@ -1770,25 +1646,19 @@ export class Emulator implements IColleague {
       }
       case 0xd3: {
         // OUT D8
-        if (this.byteAt(1).val() === 2) {
-          console.log(this.test.join('\n'));
-          console.log(this.test.length);
-          this.test = new Array<string>();
+        if (!this.test) {
+          this.send(this.byteAt(1).val(), state.a.val());
+        } else {
+          // Writing to out indicates the end of a test
+          this.testComplete = true;
         }
-        this.send(this.byteAt(1).val(), state.a.val()); // TODO: Is this always supposed to be 1?
         state.pc.incr(2);
         break;
       }
       case 0xd4: {
         // CNC addr
         if (state.cc.cy === 0) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -1851,13 +1721,7 @@ export class Emulator implements IColleague {
       case 0xdc: {
         // CC addr
         if (state.cc.cy === 1) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -1922,13 +1786,7 @@ export class Emulator implements IColleague {
       case 0xe4: {
         // CPO addr
         if (state.cc.p === 0) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -1993,13 +1851,7 @@ export class Emulator implements IColleague {
       case 0xec: {
         // CPE addr
         if (state.cc.p === 1) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -2061,13 +1913,7 @@ export class Emulator implements IColleague {
       case 0xf4: {
         // CP addr
         if (state.cc.s === 0) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -2127,13 +1973,7 @@ export class Emulator implements IColleague {
       case 0xfc: {
         // CM addr
         if (state.cc.s === 1) {
-          const val = state.pc.add(new Uint8(3));
-          const { high, low } = utils.split(val);
-
-          this.updateRam(state.sp.decr(1), high);
-          this.updateRam(state.sp.decr(1), low);
-
-          state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+          this.call();
         } else {
           state.pc.incr(3);
         }
@@ -2152,14 +1992,7 @@ export class Emulator implements IColleague {
       }
       case 0xff: {
         // RST 7
-        // TODO: is this wrong?
         this.unimplementedInstruction(opcode);
-        const { high, low } = utils.split(state.pc.add(2));
-
-        this.updateRam(state.sp.decr(1), high);
-        this.updateRam(state.sp.decr(1), low);
-
-        state.pc = new Uint8(0x38);
         break;
       }
       default: {
@@ -2170,6 +2003,20 @@ export class Emulator implements IColleague {
     this.instructionNumber++;
     return cycles8080[opcode];
   };
+
+  private call() {
+    const { state } = this;
+
+    const val = state.pc.add(new Uint8(3));
+    const { high, low } = utils.split(val);
+
+    this.updateRam(state.sp.decr(1), high);
+    this.updateRam(state.sp.decr(1), low);
+
+    state.pc = utils.concatUint(this.byteAt(2), this.byteAt(1));
+
+    this.cycles += 6;
+  }
 
   updateRam(location: number, value: Uint) {
     const { state } = this;
@@ -2186,7 +2033,6 @@ export class Emulator implements IColleague {
     const { state } = this;
     state.cc.z = toBit((n.val() & 0xff) === 0);
     state.cc.s = toBit((n.val() & 0x80) === 0x80);
-    state.cc.ac = n.auxCarry;
     state.cc.p = this.parity(n.val());
 
     if (carry) {
@@ -2214,11 +2060,9 @@ export class Emulator implements IColleague {
       throw new Error('src and dest cannot be a memory location');
     }
 
-    const { state } = this;
+    this.state[srcKey] = this.state[destKey].clone();
 
-    state[srcKey] = state[destKey].clone();
-
-    state.pc.incr(1);
+    this.state.pc.incr(1);
   };
 
   private movMem = (srcKey: string, destKey: string): void => {
@@ -2237,6 +2081,16 @@ export class Emulator implements IColleague {
     state.pc.incr(1);
   };
 
+  private modifyBit(number: number, pos: number, b: Bit) {
+    const mask = 1 << pos;
+    return (number & ~mask) | ((b << pos) & mask);
+  }
+
+  private byteAt = (index: number): Uint8 => {
+    const { state } = this;
+    return state.memory[state.pc.val() + index];
+  };
+
   private ret = () => {
     const { state } = this;
     const low = state.memory[state.sp.val()];
@@ -2244,6 +2098,8 @@ export class Emulator implements IColleague {
 
     state.pc = utils.concatUint(high, low);
     state.sp.incr(1);
+
+    this.cycles += 6;
   };
 
   private unimplementedInstruction = (opcode: number) => {
@@ -2256,14 +2112,4 @@ export class Emulator implements IColleague {
   };
 }
 
-// const app = new Emulator({
-//   debug: true,
-// });
-
-// try {
-//   app.run();
-// } catch (error) {
-//   console.log(app.instructionNumber);
-//   console.log(error);
-// }
 export default Emulator;

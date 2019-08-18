@@ -1,5 +1,5 @@
 import { Painter } from './painter/painter';
-import { Emulator } from './emulator/emulator';
+import Emulator from './emulator/emulator';
 import { Mediator } from './mediator/Mediator';
 
 class Main {
@@ -7,7 +7,7 @@ class Main {
 
   constructor() {
     const mediator = new Mediator();
-    this.emulator = new Emulator({ mediator, web: true, debug: true });
+    this.emulator = new Emulator({ mediator });
     const painter = new Painter(mediator);
 
     mediator.registerOut(this.emulator);

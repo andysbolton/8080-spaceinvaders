@@ -9,9 +9,6 @@ export class Painter implements IColleague {
   private canvas: HTMLCanvasElement | undefined;
   private context: CanvasRenderingContext2D | null;
   public mediator: IMediator;
-  // private memory: ByteArray = ByteArray.create();
-  // private _painterCount: number = 0;
-  // private _x: number = 0x0;
   private events: Events;
   private shiftRegister: Uint16 = new Uint16();
   private shiftOffset: number = 0;
