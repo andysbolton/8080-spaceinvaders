@@ -1,6 +1,4 @@
-// @flow
-import Uint8 from './Uint8';
-import Bit, { toBit } from './Bit';
+import Bit from './Bit';
 
 export default class ConditionCodes {
   z: Bit = 0;

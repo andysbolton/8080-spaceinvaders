@@ -1,4 +1,3 @@
-// @flow
 import Uint8 from './Uint8';
 import Uint16 from './Uint16';
 import ConditionCodes from './ConditionCodes';

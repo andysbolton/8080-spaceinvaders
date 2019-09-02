@@ -1,13 +1,13 @@
-import Bit, { toBit } from './models/Bit';
-import ByteArray from './models/ByteArray';
-import CpuState from './models/CpuState';
-import Uint from './models/Uint';
-import Uint16 from './models/Uint16';
-import Uint8 from './models/Uint8';
-import utils from './utils/utils';
-import { IColleague } from './../common/interfaces/IColleague';
-import { IMediator } from './../common/interfaces/IMediator';
-const fs = require('fs');
+import Bit, { toBit } from "./models/Bit";
+import ByteArray from "./models/ByteArray";
+import CpuState from "./models/CpuState";
+import Uint from "./models/Uint";
+import Uint16 from "./models/Uint16";
+import Uint8 from "./models/Uint8";
+import utils from "./utils/utils";
+import { IColleague } from "./../common/interfaces/IColleague";
+import { IMediator } from "./../common/interfaces/IMediator";
+const fs = require("fs");
 
 class Emulator implements IColleague {
   debug: boolean;
@@ -23,7 +23,7 @@ class Emulator implements IColleague {
   constructor({
     mediator,
     debug,
-    test,
+    test
   }: {
     mediator: IMediator;
     test?: boolean;
@@ -32,12 +32,9 @@ class Emulator implements IColleague {
     this.state = new CpuState();
     this.state.memory.alloc(0x10000);
 
-    const useDebug = !!debug;
-    const useTest = !!test;
-
     this.mediator = mediator;
-    this.debug = useDebug;
-    this.test = useTest;
+    this.debug = !!debug;
+    this.test = !!test;
 
     this.in = ByteArray.create();
     this.in.alloc(0x8);
@@ -96,7 +93,7 @@ class Emulator implements IColleague {
   }
 
   async init() {
-    const res = await fetch('invaders');
+    const res = await fetch("invaders");
     const buf = await res.arrayBuffer();
     const view = new Uint8Array(buf);
     const romBytes = [...view].map(Number);
@@ -112,17 +109,14 @@ class Emulator implements IColleague {
         break;
       }
 
-      if (this.instructionNumber % 100000 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 1));
+      if (this.instructionNumber % 1000 === 0) {
+        // sleep for screen painting
+        // TODO: try to wait based on cpu hz
+        await new Promise(resolve => setTimeout(resolve, 5));
       }
 
-      try {
-        const next = this.readNext();
-        this.cycles = ((this.cycles + next) & 0xffffffff) >>> 0;
-      } catch (error) {
-        console.log(error, this.instructionNumber);
-        throw error;
-      }
+      const next = this.readNext();
+      this.cycles = ((this.cycles + next) & 0xffffffff) >>> 0;
 
       if (this.cycles >= this.cyclesUntilInterrupt && !this.test) {
         if (this.state.intEnable.val() === 1) {
@@ -150,7 +144,7 @@ class Emulator implements IColleague {
       }, command 0x${opcode.toString(16)}`
     );
     this.logState(state);
-    console.log('cycles: ', this.cycles);
+    console.log("cycles: ", this.cycles);
   };
 
   private logState(state: CpuState) {
@@ -176,13 +170,11 @@ class Emulator implements IColleague {
 
   private generateInterrupt(interruptNum: number) {
     const { state } = this;
-    //perform "PUSH PC"
+
     const { high, low } = utils.split(state.pc);
     this.updateRam(state.sp.decr(1), high);
     this.updateRam(state.sp.decr(1), low);
 
-    //Set the PC to the low memory vector.
-    //This is identical to an "RST interrupt_num" instruction.
     state.pc = new Uint16(8 * interruptNum);
   }
 
@@ -651,269 +643,269 @@ class Emulator implements IColleague {
       }
       case 0x40: {
         // MOV B, B
-        this.mov('b', 'b');
+        this.mov("b", "b");
         break;
       }
       case 0x41:
         // MOV B, C
-        this.mov('b', 'c');
+        this.mov("b", "c");
         break;
       case 0x42:
         // MOV B, D
-        this.mov('b', 'd');
+        this.mov("b", "d");
         break;
       case 0x43:
         // MOV B, E
-        this.mov('b', 'e');
+        this.mov("b", "e");
         break;
       case 0x44: {
         // MOV B, H
-        this.mov('b', 'h');
+        this.mov("b", "h");
         break;
       }
       case 0x45: {
         // MOV B, L
-        this.mov('b', 'l');
+        this.mov("b", "l");
         break;
       }
       case 0x46: {
         // MOV B, M
-        this.movMem('b', 'm');
+        this.movMem("b", "m");
         break;
       }
       case 0x47: {
         // MOV B, A
-        this.mov('b', 'a');
+        this.mov("b", "a");
         break;
       }
       case 0x48: {
         // MOV C, B
-        this.mov('c', 'b');
+        this.mov("c", "b");
         break;
       }
       case 0x49: {
         // MOV C, C
-        this.mov('c', 'c');
+        this.mov("c", "c");
         break;
       }
       case 0x4a: {
         // 	MOV C, D
-        this.mov('c', 'd');
+        this.mov("c", "d");
         break;
       }
       case 0x4b: {
         // 	MOV C, E
-        this.mov('c', 'e');
+        this.mov("c", "e");
         break;
       }
       case 0x4c: {
         // MOV C, H
-        this.mov('c', 'h');
+        this.mov("c", "h");
         break;
       }
       case 0x4d: {
         // MOV C, L
-        this.mov('c', 'l');
+        this.mov("c", "l");
         break;
       }
       case 0x4e: {
         // MOV C, M
-        this.movMem('c', 'm');
+        this.movMem("c", "m");
         break;
       }
       case 0x4f: {
         // MOV C, A
-        this.mov('c', 'a');
+        this.mov("c", "a");
         break;
       }
       case 0x50: {
         // MOV D, B
-        this.mov('d', 'b');
+        this.mov("d", "b");
         break;
       }
       case 0x51: {
         // MOV D, C
-        this.mov('d', 'c');
+        this.mov("d", "c");
         break;
       }
       case 0x52: {
         //	MOV D, D
-        this.mov('d', 'd');
+        this.mov("d", "d");
         break;
       }
       case 0x53: {
         // MOV D, E
-        this.mov('d', 'e');
+        this.mov("d", "e");
         break;
       }
       case 0x54: {
         // MOV D, H
-        this.mov('d', 'h');
+        this.mov("d", "h");
         break;
       }
       case 0x55: {
         // MOV D, L
-        this.mov('d', 'l');
+        this.mov("d", "l");
         break;
       }
       case 0x56: {
         // MOV D, M
-        this.movMem('d', 'm');
+        this.movMem("d", "m");
         break;
       }
       case 0x57: {
         // MOV D, A
-        this.mov('d', 'a');
+        this.mov("d", "a");
         break;
       }
       case 0x58: {
         // MOV E, B
-        this.mov('e', 'b');
+        this.mov("e", "b");
         break;
       }
       case 0x59: {
         // MOV E, C
-        this.mov('e', 'c');
+        this.mov("e", "c");
         break;
       }
       case 0x5a: {
         // MOV E, D
-        this.mov('e', 'd');
+        this.mov("e", "d");
         break;
       }
       case 0x5b: {
         // MOV E, E
-        this.mov('e', 'e');
+        this.mov("e", "e");
         break;
       }
       case 0x5c: {
         // MOV E, H
-        this.mov('e', 'h');
+        this.mov("e", "h");
         break;
       }
       case 0x5d: {
         // MOV E, L
-        this.mov('e', 'l');
+        this.mov("e", "l");
         break;
       }
       case 0x5e: {
         // MOV E, M
-        this.movMem('e', 'm');
+        this.movMem("e", "m");
         break;
       }
       case 0x5f: {
         // MOV E, A
-        this.mov('e', 'a');
+        this.mov("e", "a");
         break;
       }
       case 0x60: {
         // MOV H, B
-        this.mov('h', 'b');
+        this.mov("h", "b");
         break;
       }
       case 0x61: {
         // MOV H, C
-        this.mov('h', 'c');
+        this.mov("h", "c");
         break;
       }
       case 0x62: {
         // MOV H, D
-        this.mov('h', 'd');
+        this.mov("h", "d");
         break;
       }
       case 0x63: {
         // MOV H, E
-        this.mov('h', 'e');
+        this.mov("h", "e");
         break;
       }
       case 0x64: {
         // MOV H, H
-        this.mov('h', 'h');
+        this.mov("h", "h");
         break;
       }
       case 0x65: {
         // MOV H, L
-        this.mov('h', 'l');
+        this.mov("h", "l");
         break;
       }
       case 0x66: {
         // MOV H, M
-        this.movMem('h', 'm');
+        this.movMem("h", "m");
         break;
       }
       case 0x67: {
         // MOV H, A
-        this.mov('h', 'a');
+        this.mov("h", "a");
         break;
       }
       case 0x68: {
         // MOV L, B
-        this.mov('l', 'b');
+        this.mov("l", "b");
         break;
       }
       case 0x69: {
         // MOV L, C
-        this.mov('l', 'c');
+        this.mov("l", "c");
         break;
       }
       case 0x6a: {
         // MOV L, D
-        this.mov('l', 'd');
+        this.mov("l", "d");
         break;
       }
       case 0x6b: {
         // MOV L, E
-        this.mov('l', 'e');
+        this.mov("l", "e");
         break;
       }
       case 0x6c: {
         // MOV L, H
-        this.mov('l', 'h');
+        this.mov("l", "h");
         break;
       }
       case 0x6d: {
         // MOV L, L
-        this.mov('l', 'l');
+        this.mov("l", "l");
         break;
       }
       case 0x6e: {
         // MOV L, M
-        this.movMem('l', 'm');
+        this.movMem("l", "m");
         break;
       }
       case 0x6f: {
         // MOV L, A
-        this.mov('l', 'a');
+        this.mov("l", "a");
         break;
       }
       case 0x70: {
         // MOV M, B
-        this.movMem('m', 'b');
+        this.movMem("m", "b");
         break;
       }
       case 0x71: {
         // MOV M, C
-        this.movMem('m', 'c');
+        this.movMem("m", "c");
         break;
       }
       case 0x72: {
         // MOV M, D
-        this.movMem('m', 'd');
+        this.movMem("m", "d");
         break;
       }
       case 0x73: {
         // MOV M, E
-        this.movMem('m', 'e');
+        this.movMem("m", "e");
         break;
       }
       case 0x74: {
         // MOV M, H
-        this.movMem('m', 'h');
+        this.movMem("m", "h");
         break;
       }
       case 0x75: {
         // MOV M, L
-        this.movMem('m', 'l');
+        this.movMem("m", "l");
         break;
       }
       case 0x76: {
@@ -922,47 +914,47 @@ class Emulator implements IColleague {
       }
       case 0x77: {
         // MOV M, A
-        this.movMem('m', 'a');
+        this.movMem("m", "a");
         break;
       }
       case 0x78: {
         // MOV A, B
-        this.mov('a', 'b');
+        this.mov("a", "b");
         break;
       }
       case 0x79: {
         // 	MOV A, C
-        this.mov('a', 'c');
+        this.mov("a", "c");
         break;
       }
       case 0x7a: {
         // MOV A, D
-        this.mov('a', 'd');
+        this.mov("a", "d");
         break;
       }
       case 0x7b: {
         // 	MOV A, E
-        this.mov('a', 'e');
+        this.mov("a", "e");
         break;
       }
       case 0x7c: {
         // MOV A, H
-        this.mov('a', 'h');
+        this.mov("a", "h");
         break;
       }
       case 0x7d: {
         // MOV A, L
-        this.mov('a', 'l');
+        this.mov("a", "l");
         break;
       }
       case 0x7e: {
         // MOV A, M
-        this.movMem('a', 'm');
+        this.movMem("a", "m");
         break;
       }
       case 0x7f: {
         // MOV A, A
-        this.mov('a', 'a');
+        this.mov("a", "a");
         break;
       }
       case 0x80: {
@@ -1735,8 +1727,8 @@ class Emulator implements IColleague {
             do {
               const code = String.fromCharCode(state.memory[addr++].val());
               console.log(code);
-            } while (String.fromCharCode(state.memory[addr].val()) !== '$');
-            console.log('\n');
+            } while (String.fromCharCode(state.memory[addr].val()) !== "$");
+            console.log("\n");
           }
           state.a = new Uint8(0xff);
         } else {
@@ -2093,8 +2085,8 @@ class Emulator implements IColleague {
   };
 
   private mov = (srcKey: string, destKey: string): void => {
-    if (srcKey === 'm' || destKey === 'm') {
-      throw new Error('src and dest cannot be a memory location');
+    if (srcKey === "m" || destKey === "m") {
+      throw new Error("src and dest cannot be a memory location");
     }
 
     this.state[srcKey] = this.state[destKey].clone();
@@ -2103,13 +2095,13 @@ class Emulator implements IColleague {
   };
 
   private movMem = (srcKey: string, destKey: string): void => {
-    if (srcKey !== 'm' && destKey !== 'm') {
-      throw new Error('must specify a memory location');
+    if (srcKey !== "m" && destKey !== "m") {
+      throw new Error("must specify a memory location");
     }
 
     const { state } = this;
 
-    if (srcKey === 'm') {
+    if (srcKey === "m") {
       this.updateRam(state.hl.val(), state[destKey]);
     } else {
       state[srcKey] = state.memory[state.hl.val()].clone();
