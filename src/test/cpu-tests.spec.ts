@@ -4,12 +4,20 @@ import Uint16 from '../emulator/models/Uint16';
 import Uint8 from '../emulator/models/Uint8';
 import fs from 'fs';
 
+console.log = (s: any) => {
+  process.stdout.write(s);
+};
+
 describe('8080 Tests', () => {
+  beforeEach(() => {
+    jest.setTimeout(100000000);
+  });
   it.each([
-    // ['8080PRE.COM', 7817],
+    ['8080PRE.COM', 7817],
     ['TST8080.COM', 4924],
+    // this test is not passing, AC is not getting set on 0x8F and related
     // ['8080EXM.COM', 23803381171],
-    // ['CPUTEST.COM', 255653383],
+    ['CPUTEST.COM', 255653383],
   ])('should run test file %s with %i cyles', async (file, cycles) => {
     const mediator = new Mediator();
     const emulator = new Emulator({ mediator: mediator, test: true });

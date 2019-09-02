@@ -8,30 +8,7 @@ import utils from './utils/utils';
 import { IColleague } from './../common/interfaces/IColleague';
 import { IMediator } from './../common/interfaces/IMediator';
 import { bit } from './utils/bit';
-
-// prettier-ignore
-const cycles8080 = [
-  //  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 0
-      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 1
-      4,  10, 16, 5,  5,  5,  7,  4,  4,  10, 16, 5,  5,  5,  7,  4,  // 2
-      4,  10, 13, 5,  10, 10, 10, 4,  4,  10, 13, 5,  5,  5,  7,  4,  // 3
-      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 4
-      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 5
-      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 6
-      7,  7,  7,  7,  7,  7,  7,  7,  5,  5,  5,  5,  5,  5,  7,  5,  // 7
-      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 8
-      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 9
-      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // A
-      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // B
-      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // C
-      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // D
-      5,  10, 10, 18, 11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11, // E
-      5,  10, 10, 4,  11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11  // F
-];
-
-// CPU running at 2mhz, 2 interrupts running at 60mhz
-const cyclesUntilInterrupt: number = Math.ceil(2000000 / 60 / 2);
+const fs = require('fs');
 
 class Emulator implements IColleague {
   debug: boolean;
@@ -64,8 +41,48 @@ class Emulator implements IColleague {
     this.test = useTest;
 
     this.in = ByteArray.create();
-    this.in.alloc(8);
+    this.in.alloc(0x8);
+
+    let port0 = 0x0;
+    port0 += 1 << 1;
+    port0 += 1 << 2;
+    port0 += 1 << 3;
+
+    this.in[0] = new Uint8(port0);
+
+    let port1 = 0x0;
+    port1 += 1 << 3;
+
+    this.in[1] = new Uint8(port1);
+
+    if (fs.existsSync('D:\\comp\\testjs.txt')) {
+      fs.unlinkSync('D:\\comp\\testjs.txt');
+    }
   }
+
+  // prettier-ignore
+  private readonly cycles8080 = [
+  //  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 0
+      4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,  7,  4,  // 1
+      4,  10, 16, 5,  5,  5,  7,  4,  4,  10, 16, 5,  5,  5,  7,  4,  // 2
+      4,  10, 13, 5,  10, 10, 10, 4,  4,  10, 13, 5,  5,  5,  7,  4,  // 3
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 4
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 5
+      5,  5,  5,  5,  5,  5,  7,  5,  5,  5,  5,  5,  5,  5,  7,  5,  // 6
+      7,  7,  7,  7,  7,  7,  7,  7,  5,  5,  5,  5,  5,  5,  7,  5,  // 7
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 8
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // 9
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // A
+      4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,  // B
+      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // C
+      5,  10, 10, 10, 11, 11, 7,  11, 5,  10, 10, 10, 11, 17, 7,  11, // D
+      5,  10, 10, 18, 11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11, // E
+      5,  10, 10, 4,  11, 11, 7,  11, 5,  5,  10, 4,  11, 17, 7,  11  // F
+];
+
+  // CPU running at 2mhz, 2 interrupts running at 60mhz
+  private readonly cyclesUntilInterrupt: number = Math.ceil(2000000 / 60 / 2);
 
   send(port: number, pos: number, bit?: Bit) {
     this.mediator.sendOut(port, pos, bit);
@@ -89,33 +106,7 @@ class Emulator implements IColleague {
     const view = new Uint8Array(buf);
     const romBytes = [...view].map(Number);
     this.state.memory.set([...romBytes]); //  ...ramBytes
-
-    //Fix the first instruction to be JMP 0x100
-    // this.state.memory[0] = new Uint8(0xc3);
-    // this.state.memory[1] = new Uint8(0);
-    // this.state.memory[2] = new Uint8(0x01);
-
-    // // Fix the stack pointer from 0x6ad to 0x7ad
-    // // this 0x06 byte 112 in the code, which is
-    // // byte 112 + 0x100 = 368 in memory
-    // this.state.memory[368] = new Uint8(0x7);
-
-    // //Skip DAA test
-    // this.state.memory[0x59c] = new Uint8(0xc3); //JMP
-    // this.state.memory[0x59d] = new Uint8(0xc2);
-    // this.state.memory[0x59e] = new Uint8(0x05);
-
-    // state.pc = new Uint16(0x100);
-    // // inject "out 1,a" at 0x0000 (signal to stop the test)
-    // state.memory[0x0000] = new Uint8(0xd3);
-    // state.memory[0x0001] = new Uint8(0x00);
-
-    // // inject "in a,0" at 0x0005 (signal to output some characters)
-    // state.memory[0x0005] = new Uint8(0xdb);
-    // state.memory[0x0006] = new Uint8(0x00);
-    // state.memory[0x0007] = new Uint8(0xc9);
-
-    this.run();
+    await this.run();
   }
 
   run = async () => {
@@ -126,14 +117,19 @@ class Emulator implements IColleague {
         break;
       }
 
-      if (this.instructionNumber % 1000 === 0 && !this.test) {
-        await new Promise(resolve => setTimeout(resolve, 5));
+      if (this.instructionNumber % 100000 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1));
       }
 
-      const next = this.readNext();
-      this.cycles += next;
+      try {
+        const next = this.readNext();
+        this.cycles = ((this.cycles + next) & 0xffffffff) >>> 0;
+      } catch (error) {
+        console.log(error, this.instructionNumber);
+        throw error;
+      }
 
-      if (this.cycles >= cyclesUntilInterrupt && !this.test) {
+      if (this.cycles >= this.cyclesUntilInterrupt && !this.test) {
         if (this.state.intEnable.val() === 1) {
           if (this.lastInterrupt === 2) {
             this.generateInterrupt(1);
@@ -144,7 +140,7 @@ class Emulator implements IColleague {
           }
           this.state.intEnable = new Uint8(0);
         }
-        this.cycles -= cyclesUntilInterrupt;
+        this.cycles -= this.cyclesUntilInterrupt;
       }
     }
 
@@ -160,6 +156,33 @@ class Emulator implements IColleague {
     );
     this.logState(state);
     console.log('cycles: ', this.cycles);
+  };
+
+  lines: Array<string> = [];
+
+  private matchLogger = () => {
+    const { state } = this;
+    const pc = state.pc.hex.padStart(4, '0');
+    const af = state.af.hex.padStart(4, '0');
+    const bc = state.bc.hex.padStart(4, '0');
+    const de = state.de.hex.padStart(4, '0');
+    const hl = state.hl.hex.padStart(4, '0');
+    const sp = state.sp.hex.padStart(4, '0');
+    const str = `PC: ${pc}, AF: ${af}, BC: ${bc}, DE: ${de}, HL: ${hl}, SP: ${sp}, CYC: ${
+      this.cycles
+    } (${this.byteAt(0).hex.padStart(2, '0')} ${this.byteAt(1).hex.padStart(
+      2,
+      '0'
+    )} ${this.byteAt(2).hex.padStart(2, '0')} ${this.byteAt(3).hex.padStart(
+      2,
+      '0'
+    )})\r\n`.toUpperCase();
+    this.lines.push(str);
+
+    if (this.lines.length === 1000000) {
+      fs.appendFileSync('D:\\comp\\testjs.txt', this.lines.join(''));
+      this.lines = [];
+    }
   };
 
   private logState(state: CpuState) {
@@ -199,8 +222,14 @@ class Emulator implements IColleague {
     const { state } = this;
     const opcode = state.memory[state.pc.val()].val();
 
-    if (this.debug) {
-      this.log(state.pc.val(), opcode);
+    this.matchLogger();
+
+    if (this.instructionNumber === 263803835) {
+      debugger;
+
+      // fs.appendFileSync('D:\\comp\\testjs.txt', this.lines.join(''));
+      // this.lines = [];
+      // throw new Error('done');
     }
 
     switch (opcode) {
@@ -229,15 +258,16 @@ class Emulator implements IColleague {
       }
       case 0x04: {
         // INR B
-        state.b.incr(1);
-        this.setFlags(state.b);
+        const val = state.b.add(1);
+        this.setFlags(val);
+        state.b = val;
         state.pc.incr(1);
         break;
       }
       case 0x05: {
         // DCR B
         const val = state.b.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.b = val;
         state.pc.incr(1);
         break;
@@ -282,15 +312,16 @@ class Emulator implements IColleague {
       }
       case 0x0c: {
         // INR C
-        state.c.incr(1);
-        this.setFlags(state.c);
+        const val = state.c.add(1);
+        this.setFlags(val);
+        state.c = val;
         state.pc.incr(1);
         break;
       }
       case 0x0d: {
         // DCR C
         const val = state.c.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.c = val;
         state.pc.incr(1);
         break;
@@ -335,15 +366,16 @@ class Emulator implements IColleague {
       }
       case 0x14: {
         // INR D
-        state.d.incr(1);
-        this.setFlags(state.d);
+        const val = state.d.add(1);
+        this.setFlags(val);
+        state.d = val;
         state.pc.incr(1);
         break;
       }
       case 0x15: {
         // DCR D
         const val = state.d.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.d = val;
         state.pc.incr(1);
         break;
@@ -389,15 +421,16 @@ class Emulator implements IColleague {
       }
       case 0x1c: {
         // INR E
-        state.e.incr(1);
-        this.setFlags(state.e);
+        const val = state.e.add(1);
+        this.setFlags(val);
+        state.e = val;
         state.pc.incr(1);
         break;
       }
       case 0x1d: {
         // DCR E
         const val = state.e.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.e = val;
         state.pc.incr(1);
         break;
@@ -447,15 +480,16 @@ class Emulator implements IColleague {
       }
       case 0x24: {
         // INR H
-        state.h.incr(1);
-        this.setFlags(state.h);
+        const val = state.h.add(1);
+        this.setFlags(val);
+        state.h = val;
         state.pc.incr(1);
         break;
       }
       case 0x25: {
         //	DCR H
         const val = state.h.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.h = val;
         state.pc.incr(1);
         break;
@@ -468,19 +502,27 @@ class Emulator implements IColleague {
       }
       case 0x27: {
         // DAA
-        let { high, low } = utils.split(state.a);
+        let low = state.a.val() & 0xf;
+        let high = state.a.val() >> 4;
 
-        if (low.val() > 9 || state.cc.ac === 1) {
-          low = low.add(6);
-          state.cc.ac = toBit(low.carry);
+        if (low > 0x09 || state.cc.ac === 1) {
+          low += 0x6;
+          if (low > 0xf) {
+            state.cc.ac = toBit(1);
+            high += 0x01;
+          } else {
+            state.cc.ac = toBit(0);
+          }
+          low &= 0xf;
         }
 
-        if (high.val() > 9 || state.cc.cy === 1) {
-          high = high.add(6);
-          this.setCarryBit(high.carry);
+        if (high > 0x09 || state.cc.cy === 1) {
+          high += 0x6;
+          this.setCarryBit(toBit(high > 0xf));
+          high &= 0xf;
         }
 
-        const val = utils.concatUint(high, low);
+        const val = new Uint8((high << 4) | low);
         this.setFlags(val);
         state.a = val;
         state.pc.incr(1);
@@ -517,15 +559,16 @@ class Emulator implements IColleague {
       }
       case 0x2c: {
         // INR L
-        state.l.incr(1);
-        this.setFlags(state.l);
+        const val = state.l.add(1);
+        this.setFlags(val);
+        state.l = val;
         state.pc.incr(1);
         break;
       }
       case 0x2d: {
         // DCR L
         const val = state.l.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.l = val;
         state.pc.incr(1);
         break;
@@ -570,7 +613,7 @@ class Emulator implements IColleague {
         // INR M
         const val = state.memory[state.hl.val()].add(1);
         this.updateRam(state.hl.val(), val);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.pc.incr(1);
         break;
       }
@@ -578,7 +621,7 @@ class Emulator implements IColleague {
         // DCR M
         const val = state.memory[state.hl.val()].sub(1);
         this.updateRam(state.hl.val(), val);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.pc.incr(1);
         break;
       }
@@ -621,15 +664,16 @@ class Emulator implements IColleague {
       }
       case 0x3c: {
         // INR A
-        state.a.incr(1);
-        this.setFlags(state.a);
+        const val = state.a.add(1);
+        this.setFlags(val);
+        state.a = val;
         state.pc.incr(1);
         break;
       }
       case 0x3d: {
         // DCR A
         const val = state.a.sub(1);
-        this.setFlags(val, true);
+        this.setFlags(val);
         state.a = val;
         state.pc.incr(1);
         break;
@@ -648,7 +692,8 @@ class Emulator implements IColleague {
         break;
       }
       case 0x40: {
-        this.unimplementedInstruction(opcode);
+        // MOV B, B
+        this.mov('b', 'b');
         break;
       }
       case 0x41:
@@ -1028,7 +1073,7 @@ class Emulator implements IColleague {
       }
       case 0x88: {
         // ADC B
-        const val = state.a.add(state.b).add(state.cc.cy);
+        const val = state.a.add(state.b.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1036,7 +1081,7 @@ class Emulator implements IColleague {
       }
       case 0x89: {
         // ADC C
-        const val = state.a.add(state.c).add(state.cc.cy);
+        const val = state.a.add(state.c.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1044,7 +1089,7 @@ class Emulator implements IColleague {
       }
       case 0x8a: {
         //	ADC D
-        const val = state.a.add(state.d).add(state.cc.cy);
+        const val = state.a.add(state.d.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1052,7 +1097,7 @@ class Emulator implements IColleague {
       }
       case 0x8b: {
         //	ADC E
-        const val = state.a.add(state.e).add(state.cc.cy);
+        const val = state.a.add(state.e.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1060,7 +1105,7 @@ class Emulator implements IColleague {
       }
       case 0x8c: {
         //	ADC H
-        const val = state.a.add(state.h).add(state.cc.cy);
+        const val = state.a.add(state.h.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1068,7 +1113,7 @@ class Emulator implements IColleague {
       }
       case 0x8d: {
         //	ADC L
-        const val = state.a.add(state.l).add(state.cc.cy);
+        const val = state.a.add(state.l.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1076,7 +1121,9 @@ class Emulator implements IColleague {
       }
       case 0x8e: {
         //	ADC M
-        const val = state.a.add(state.memory[state.hl.val()]).add(state.cc.cy);
+        const val = state.a.add(
+          state.memory[state.hl.val()].val() + state.cc.cy
+        );
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1084,7 +1131,7 @@ class Emulator implements IColleague {
       }
       case 0x8f: {
         //	ADC A
-        const val = state.a.add(state.a).add(state.cc.cy);
+        const val = state.a.add(state.a.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1156,7 +1203,7 @@ class Emulator implements IColleague {
       }
       case 0x98: {
         // SBB B
-        const val = state.a.sub(state.b.add(state.cc.cy));
+        const val = state.a.sub(state.b.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1164,7 +1211,7 @@ class Emulator implements IColleague {
       }
       case 0x99: {
         // SBB C
-        const val = state.a.sub(state.c.add(state.cc.cy));
+        const val = state.a.sub(state.c.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1172,7 +1219,7 @@ class Emulator implements IColleague {
       }
       case 0x9a: {
         // SBB D
-        const val = state.a.sub(state.d.add(state.cc.cy));
+        const val = state.a.sub(state.d.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1180,7 +1227,7 @@ class Emulator implements IColleague {
       }
       case 0x9b: {
         // SBB E
-        const val = state.a.sub(state.e.add(state.cc.cy));
+        const val = state.a.sub(state.e.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1188,7 +1235,7 @@ class Emulator implements IColleague {
       }
       case 0x9c: {
         // SBB H
-        const val = state.a.sub(state.h.add(state.cc.cy));
+        const val = state.a.sub(state.h.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1196,7 +1243,7 @@ class Emulator implements IColleague {
       }
       case 0x9d: {
         // SBB L
-        const val = state.a.sub(state.l.add(state.cc.cy));
+        const val = state.a.sub(state.l.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1204,7 +1251,9 @@ class Emulator implements IColleague {
       }
       case 0x9e: {
         // SBB M
-        const val = state.a.sub(state.memory[state.hl.val()].add(state.cc.cy));
+        const val = state.a.sub(
+          state.memory[state.hl.val()].val() + state.cc.cy
+        );
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1212,7 +1261,7 @@ class Emulator implements IColleague {
       }
       case 0x9f: {
         // SBB A
-        const val = state.a.sub(state.a.add(state.cc.cy));
+        const val = state.a.sub(state.a.val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(1);
@@ -1220,73 +1269,73 @@ class Emulator implements IColleague {
       }
       case 0xa0: {
         // ANA B
-        const and = state.a.val() & state.b.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.b.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa1: {
         // ANA C
-        const and = state.a.val() & state.c.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.c.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa2: {
         // ANA D
-        const and = state.a.val() & state.d.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.d.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa3: {
         // ANA E
-        const and = state.a.val() & state.e.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.e.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa4: {
         // ANA H
-        const and = state.a.val() & state.h.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.h.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa5: {
         // ANA L
-        const and = state.a.val() & state.l.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.l.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa6: {
         // ANA M
-        const and = state.a.val() & state.memory[state.hl.val()].val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.memory[state.hl.val()].val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
       case 0xa7: {
         // ANA A
-        const and = state.a.val() & state.a.val();
-        state.a = new Uint8(and);
+        const and = state.a.and(state.a.val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(1);
         break;
       }
@@ -1549,8 +1598,12 @@ class Emulator implements IColleague {
       }
       case 0xc7: {
         // RST
-        state.pc = new Uint16(0);
-        state.pc.incr(1);
+        const { high, low } = utils.split(state.pc.add(3));
+
+        this.updateRam(state.sp.decr(1), high);
+        this.updateRam(state.sp.decr(1), low);
+
+        state.pc = new Uint16(0x0);
         break;
       }
       case 0xc8: {
@@ -1607,7 +1660,7 @@ class Emulator implements IColleague {
       }
       case 0xce: {
         // ACI D8
-        const val = state.a.add(this.byteAt(1)).add(state.cc.cy);
+        const val = state.a.add(this.byteAt(1).val() + state.cc.cy);
         this.setFlags(val, true);
         state.a = val;
         state.pc.incr(2);
@@ -1714,7 +1767,24 @@ class Emulator implements IColleague {
       }
       case 0xdb: {
         // IN D8
-        state.a = this.in[this.byteAt(1).val()];
+        if (this.test) {
+          if (state.c.val() === 2) {
+            console.log(String.fromCharCode(state.e.val()));
+          }
+          // print from memory at (DE) until '$' char
+          else if (state.c.val() === 9) {
+            let addr = state.de.val();
+            do {
+              const code = String.fromCharCode(state.memory[addr++].val());
+              console.log(code);
+            } while (String.fromCharCode(state.memory[addr].val()) !== '$');
+            console.log('\n');
+          }
+          state.a = new Uint8(0xff);
+        } else {
+          state.a = this.in[this.byteAt(1).val()];
+        }
+
         state.pc.incr(2);
         break;
       }
@@ -1741,7 +1811,13 @@ class Emulator implements IColleague {
         break;
       }
       case 0xdf: {
-        this.unimplementedInstruction(opcode);
+        // RST 3
+        const { high, low } = utils.split(state.pc.add(3));
+
+        this.updateRam(state.sp.decr(1), high);
+        this.updateRam(state.sp.decr(1), low);
+
+        state.pc = new Uint8(0x18);
         break;
       }
       case 0xe0: {
@@ -1802,10 +1878,10 @@ class Emulator implements IColleague {
       }
       case 0xe6: {
         // ANI D8
-        const and = state.a.val() & this.byteAt(1).val();
-        state.a = new Uint8(and);
+        const and = state.a.and(this.byteAt(1).val());
         this.setCarryBit(0);
-        this.setFlags(state.a);
+        this.setFlags(and);
+        state.a = and;
         state.pc.incr(2);
         break;
       }
@@ -1907,7 +1983,9 @@ class Emulator implements IColleague {
         break;
       }
       case 0xf3: {
-        this.unimplementedInstruction(opcode);
+        // DI
+        state.intEnable = new Uint8(0);
+        state.pc.incr(1);
         break;
       }
       case 0xf4: {
@@ -1922,7 +2000,7 @@ class Emulator implements IColleague {
       case 0xf5: {
         // PUSH PSW
         this.updateRam(state.sp.decr(1), state.a);
-        this.updateRam(state.sp.decr(1), state.cc.getPsw());
+        this.updateRam(state.sp.decr(1), state.getPsw());
 
         state.pc.incr(1);
         break;
@@ -2001,7 +2079,7 @@ class Emulator implements IColleague {
     }
 
     this.instructionNumber++;
-    return cycles8080[opcode];
+    return this.cycles8080[opcode];
   };
 
   private call() {
@@ -2018,12 +2096,12 @@ class Emulator implements IColleague {
     this.cycles += 6;
   }
 
-  updateRam(location: number, value: Uint) {
+  updateRam(location: number, value: Uint8) {
     const { state } = this;
 
     state.memory.splice(location, 1, value.clone());
 
-    if (location >= 0x2400 && location <= 0x3fff) {
+    if (!this.test && location >= 0x2400 && location <= 0x3fff) {
       // video ram
       this.updateScreen(location, value.val());
     }
@@ -2034,6 +2112,7 @@ class Emulator implements IColleague {
     state.cc.z = toBit((n.val() & 0xff) === 0);
     state.cc.s = toBit((n.val() & 0x80) === 0x80);
     state.cc.p = this.parity(n.val());
+    state.cc.ac = n.auxCarry;
 
     if (carry) {
       this.setCarryBit(n.carry);

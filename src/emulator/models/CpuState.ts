@@ -4,6 +4,7 @@ import Uint16 from './Uint16';
 import ConditionCodes from './ConditionCodes';
 import utils from '../utils/utils';
 import ByteArray from './ByteArray';
+import { toBit } from './Bit';
 
 export default class CpuState {
   [key: string]: any;
@@ -31,6 +32,10 @@ export default class CpuState {
   cc: ConditionCodes = new ConditionCodes();
 
   intEnable: Uint8 = new Uint8();
+
+  get af(): Uint16 {
+    return utils.concatUint(this.a, this.getPsw());
+  }
 
   get bc(): Uint16 {
     return utils.concatUint(this.b, this.c);
@@ -60,5 +65,16 @@ export default class CpuState {
     const { high, low } = utils.split(bytes);
     this.h = high;
     this.l = low;
+  }
+
+  getPsw(): Uint8 {
+    let num = 0;
+    num |= toBit(this.cc.s) << 7;
+    num |= toBit(this.cc.z) << 6;
+    num |= toBit(this.cc.ac) << 4;
+    num |= toBit(this.cc.p) << 2;
+    num |= 1 << 1;
+    num |= toBit(this.cc.cy);
+    return new Uint8(num);
   }
 }

@@ -1,4 +1,3 @@
-// @flow
 import Uint from './Uint';
 import Bit, { toBit } from './Bit';
 
@@ -8,35 +7,25 @@ export default class Uint16 extends Uint {
   }
 
   public add(n: Uint16 | number): Uint16 {
-    let val;
-    if (typeof n === 'number') {
-      val = this.num + n;
-    } else {
-      val = this.num + n.val();
-    }
+    const val = typeof n === 'number' ? n : n.val();
+    const res = this.num + val;
 
-    const ret = new Uint16(val & this.max);
+    const ret = new Uint16(res & this.max);
 
-    const { carry, auxCarry } = this.checkCarry(val);
-    ret.carry = carry;
-    ret.auxCarry = auxCarry;
+    ret.carry = this.getCarry(res);
+    ret.auxCarry = this.getAuxCarry(this.num, res, 'add');
 
     return ret;
   }
 
   public sub(n: Uint16 | number): Uint16 {
-    let val;
-    if (typeof n === 'number') {
-      val = this.num - n;
-    } else {
-      val = this.num - n.val();
-    }
+    const val = typeof n === 'number' ? n : n.val();
+    const res = this.num - val;
 
-    const ret = new Uint16(val & this.max);
+    const ret = new Uint16(res & this.max);
 
-    const { carry, auxCarry } = this.checkCarry(val);
-    ret.carry = carry;
-    ret.auxCarry = auxCarry;
+    ret.carry = this.getCarry(res);
+    ret.auxCarry = this.getAuxCarry(this.num, val, 'sub');
 
     return ret;
   }

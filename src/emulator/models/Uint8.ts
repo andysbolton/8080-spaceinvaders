@@ -1,4 +1,3 @@
-// @flow
 import Uint from './Uint';
 import Bit, { toBit } from './Bit';
 
@@ -8,35 +7,37 @@ export default class Uint8 extends Uint {
   }
 
   public add(n: Uint8 | number): Uint8 {
-    let val;
-    if (typeof n === 'number') {
-      val = this.num + n;
-    } else {
-      val = this.num + n.val();
-    }
+    const val = typeof n === 'number' ? n : n.val();
+    const res = this.num + val;
 
-    const ret = new Uint8(val & this.max);
+    const ret = new Uint8(res);
 
-    const { carry, auxCarry } = this.checkCarry(val);
-    ret.carry = carry;
-    ret.auxCarry = auxCarry;
+    ret.carry = this.getCarry(res);
+    ret.auxCarry = this.getAuxCarry(this.num, val, 'add');
 
     return ret;
   }
 
   public sub(n: Uint8 | number): Uint8 {
-    let val;
-    if (typeof n === 'number') {
-      val = this.num - n;
-    } else {
-      val = this.num - n.val();
-    }
+    const val = typeof n === 'number' ? n : n.val();
+    const res = this.num - val;
 
-    const ret = new Uint8(val & this.max);
+    const ret = new Uint8(res);
 
-    const { carry, auxCarry } = this.checkCarry(val);
-    ret.carry = carry;
-    ret.auxCarry = auxCarry;
+    ret.carry = this.getCarry(res);
+    ret.auxCarry = this.getAuxCarry(this.num, val, 'sub');
+
+    return ret;
+  }
+
+  public and(n: Uint8 | number): Uint8 {
+    const val = typeof n === 'number' ? n : n.val();
+    const res = this.num & val;
+
+    const ret = new Uint8(res);
+
+    ret.carry = this.getCarry(res);
+    ret.auxCarry = this.getAuxCarry(this.num, val, 'and');
 
     return ret;
   }

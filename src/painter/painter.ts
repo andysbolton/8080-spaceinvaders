@@ -43,35 +43,24 @@ export class Painter implements IColleague {
 
   private paint(x: number, y: number, on: number) {
     if (this.context) {
-      // this.context.clearRect(x, y, 1, 1);
       this.context.fillStyle = on ? 'white' : 'black';
-      this.context.fillRect(x * 3, y * 3, 3, 3);
+      this.context.fillRect(x * 2, y * 2, 2, 2);
     }
   }
 
   private write = (port: number, val: number) => {
-    if (port === 6) {
+    if (port === 6 || port === 3 || port == 5) {
       return;
     }
     switch (port) {
       case 2: // shift register result offset (bits 0,1,2)
-        // if (val === 0) {
-        //   offset = 0;
-        // } else if (val === 1) {
-        //   offset = 2;
-        // } else if (val === 2) {
-        //   offset = 7;
-        // }
-
-        // if (offset !== undefined) {
         this.shiftOffset = val & 0x7;
-        // }
         break;
       case 3: //sound related
         this.unimplementedInstruction(port, val);
         break;
       case 4: // fill shift register
-        const { high, low } = utils.split(this.shiftRegister);
+        const { high } = utils.split(this.shiftRegister);
 
         this.shiftRegister = new Uint16((val << 8) | high.val());
 
@@ -107,9 +96,8 @@ class Events {
 
   public init() {
     window.onkeydown = e => {
+      e.preventDefault();
       const key = e.keyCode ? e.keyCode : e.which;
-
-      console.log('pressed ', key);
 
       switch (key) {
         case 16: {
@@ -119,22 +107,67 @@ class Events {
         }
         case 37: {
           // key left (left)
-          this.onKeyPress(0, 6, 1);
+          this.onKeyPress(1, 5, 1);
           break;
         }
         case 39: {
           // key right (right)
-          this.onKeyPress(0, 5, 1);
+          this.onKeyPress(1, 6, 1);
           break;
         }
         case 32: {
           // space (fire)
-          this.onKeyPress(0, 4, 1);
+          this.onKeyPress(1, 4, 1);
           break;
         }
         case 49: {
           // 1 (first player start)
           this.onKeyPress(1, 2, 1);
+          break;
+        }
+        case 50: {
+          // 2 (second player start)
+          this.onKeyPress(1, 1, 1);
+          break;
+        }
+        default:
+          break;
+      }
+    };
+
+    window.onkeyup = e => {
+      e.preventDefault();
+      const key = e.keyCode ? e.keyCode : e.which;
+
+      switch (key) {
+        case 16: {
+          // shift (credit)
+          this.onKeyPress(1, 0, 0);
+          break;
+        }
+        case 37: {
+          // key left (left)
+          this.onKeyPress(1, 5, 0);
+          break;
+        }
+        case 39: {
+          // key right (right)
+          this.onKeyPress(1, 6, 0);
+          break;
+        }
+        case 32: {
+          // space (fire)
+          this.onKeyPress(1, 4, 0);
+          break;
+        }
+        case 49: {
+          // 1 (first player start)
+          this.onKeyPress(1, 2, 0);
+          break;
+        }
+        case 50: {
+          // 2 (second player start)
+          this.onKeyPress(1, 1, 0);
           break;
         }
         default:

@@ -23,9 +23,9 @@ export default abstract class Uint {
     return this.num === 0;
   }
 
-  public abstract add(n: Uint): Uint;
+  public abstract add(n: Uint | number): Uint;
 
-  public abstract sub(n: Uint): Uint;
+  public abstract sub(n: Uint | number): Uint;
 
   public abstract clone(): Uint;
 
@@ -34,8 +34,6 @@ export default abstract class Uint {
   public get lowOrderBit(): Bit {
     return toBit(this.num & 1);
   }
-
-  public abstract rotateLeft(): Uint;
 
   public incr(n: number): number {
     const val = (this.num + n) & this.max;
@@ -53,13 +51,20 @@ export default abstract class Uint {
     return this.num.toString(16);
   }
 
-  protected checkCarry(val: number): { carry: Bit; auxCarry: Bit } {
+  protected getCarry(val: number): Bit {
     const carry = val < 0 || val > this.max ? 1 : 0;
-    const auxCarry = val < 0 || val > this.max / 2 ? 1 : 0;
 
-    return {
-      carry,
-      auxCarry,
-    };
+    return carry;
+  }
+
+  protected getAuxCarry(num: number, value: number, type: string): Bit {
+    if (type === 'add') {
+      return toBit((((num & 0xf) + (value & 0xf)) & 0x10) === 0x10);
+    } else if (type === 'sub') {
+      return toBit(!((num & 0xf) - (value & 0xf) < 0));
+    } else if (type === 'and') {
+      return toBit(((num | value) & 0x08) !== 0);
+    }
+    throw new Error('`type` must be "add", "sub", or "and"');
   }
 }
