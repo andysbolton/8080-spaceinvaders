@@ -7,7 +7,6 @@ import Uint8 from "./models/Uint8";
 import utils from "./utils/utils";
 import { IColleague } from "./../common/interfaces/IColleague";
 import { IMediator } from "./../common/interfaces/IMediator";
-const fs = require("fs");
 
 class Emulator implements IColleague {
   debug: boolean;
