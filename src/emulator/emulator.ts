@@ -7,7 +7,6 @@ import Uint8 from './models/Uint8';
 import utils from './utils/utils';
 import { IColleague } from './../common/interfaces/IColleague';
 import { IMediator } from './../common/interfaces/IMediator';
-import { bit } from './utils/bit';
 const fs = require('fs');
 
 class Emulator implements IColleague {
@@ -54,10 +53,6 @@ class Emulator implements IColleague {
     port1 += 1 << 3;
 
     this.in[1] = new Uint8(port1);
-
-    if (fs.existsSync('D:\\comp\\testjs.txt')) {
-      fs.unlinkSync('D:\\comp\\testjs.txt');
-    }
   }
 
   // prettier-ignore
@@ -158,33 +153,6 @@ class Emulator implements IColleague {
     console.log('cycles: ', this.cycles);
   };
 
-  lines: Array<string> = [];
-
-  private matchLogger = () => {
-    const { state } = this;
-    const pc = state.pc.hex.padStart(4, '0');
-    const af = state.af.hex.padStart(4, '0');
-    const bc = state.bc.hex.padStart(4, '0');
-    const de = state.de.hex.padStart(4, '0');
-    const hl = state.hl.hex.padStart(4, '0');
-    const sp = state.sp.hex.padStart(4, '0');
-    const str = `PC: ${pc}, AF: ${af}, BC: ${bc}, DE: ${de}, HL: ${hl}, SP: ${sp}, CYC: ${
-      this.cycles
-    } (${this.byteAt(0).hex.padStart(2, '0')} ${this.byteAt(1).hex.padStart(
-      2,
-      '0'
-    )} ${this.byteAt(2).hex.padStart(2, '0')} ${this.byteAt(3).hex.padStart(
-      2,
-      '0'
-    )})\r\n`.toUpperCase();
-    this.lines.push(str);
-
-    if (this.lines.length === 1000000) {
-      fs.appendFileSync('D:\\comp\\testjs.txt', this.lines.join(''));
-      this.lines = [];
-    }
-  };
-
   private logState(state: CpuState) {
     const { cc } = state;
 
@@ -221,16 +189,6 @@ class Emulator implements IColleague {
   private readNext = (): number => {
     const { state } = this;
     const opcode = state.memory[state.pc.val()].val();
-
-    this.matchLogger();
-
-    if (this.instructionNumber === 263803835) {
-      debugger;
-
-      // fs.appendFileSync('D:\\comp\\testjs.txt', this.lines.join(''));
-      // this.lines = [];
-      // throw new Error('done');
-    }
 
     switch (opcode) {
       case 0x00: {
