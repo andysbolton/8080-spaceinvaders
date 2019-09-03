@@ -1,6 +1,6 @@
 # 8080_spaceinvaders
 
-Browser-based Intel 8080 emulator with special hardware emulation to play Space Invaders.
+Browser-based Intel 8080 emulator set up to play Space Invaders.
 
 Thanks to emulator101.com for general info and https://github.com/superzazu/8080 for test implementation.
 
