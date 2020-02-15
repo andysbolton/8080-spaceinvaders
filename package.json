@@ -31,6 +31,6 @@
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2",
     "webpack-dev-server": "^3.4.1",
-    "yarn": "^17.1.0"
+    "yarn": "^1.22.0"
   }
 }
